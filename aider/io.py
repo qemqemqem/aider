@@ -380,7 +380,23 @@ class InputOutput:
             style = dict(style=self.tool_output_color) if self.tool_output_color else dict()
             self.console.print(*messages, **style)
 
-    def append_chat_history(self, text, linebreak=False, blockquote=False, strip=True):
+    def get_chat_history(self):
+        if self.chat_history_file is None:
+            return ""
+
+        try:
+            with self.chat_history_file.open("r", encoding=self.encoding) as f:
+                return f.read()
+        except FileNotFoundError:
+            self.tool_error(f"{self.chat_history_file}: file not found error")
+            return ""
+        except IsADirectoryError:
+            self.tool_error(f"{self.chat_history_file}: is a directory")
+            return ""
+        except UnicodeError as e:
+            self.tool_error(f"{self.chat_history_file}: {e}")
+            self.tool_error("Use --encoding to set the unicode encoding.")
+            return ""
         if blockquote:
             if strip:
                 text = text.strip()
