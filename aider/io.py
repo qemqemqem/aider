@@ -21,6 +21,7 @@ from rich.text import Text
 from .dump import dump  # noqa: F401
 from .utils import is_image_file
 from .sendchat import send_with_retries
+from .sendchat import send_with_retries
 
 
 class AutoCompleter(Completer):
@@ -224,9 +225,12 @@ class InputOutput:
             shortened_chat_history = self.get_chat_history()[-5000:]
             prompt = f"This is the log of recent changes to the code base:\n\n```\n{shortened_chat_history}\n```\n\nI think the code has gotten messy and it could be refactored to clean it up.\n\nPlease suggest a refactor. Give your response in exactly one paragraph directing me how to refactor the code to make it cleaner."
 
-            # TODO Send the prompt to an LLM and get the response
-
-            await asyncio.sleep(5)
+            # Send the prompt to an LLM and get the response
+            model_name = "gpt-3.5-turbo"  # Example model name, adjust as needed
+            messages = [{"role": "user", "content": prompt}]
+            response = await send_with_retries(model_name, messages, functions=None, stream=False)
+            state["have_we_made_response"] = True
+            state["suggested_text"] = response["choices"][0]["message"]["content"]
             state["have_we_made_response"] = True
             state["suggested_text"] = "Hello! I'm a suggestion!"
 
