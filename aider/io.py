@@ -1,6 +1,8 @@
 import base64
 import os
 import asyncio
+from concurrent.futures import ThreadPoolExecutor
+
 import httpx
 from collections import defaultdict
 from datetime import datetime
@@ -211,24 +213,27 @@ class InputOutput:
             style = None
 
         # State for making suggestions
-        shared_state = {
-            "have_we_made_response": False,
-            "suggested_text": None
-        }
+        suggested_text = None
 
         # Kick off background process to get something
-        async def background_process(state):
+        def background_process():
             shortened_chat_history = self.get_chat_history()[-5000:]
             prompt = f"This is the log of recent changes to the code base:\n\n```\n{shortened_chat_history}\n```\n\nI think the code has gotten messy and it could be refactored to clean it up.\n\nPlease suggest a refactor. Give your response in exactly one paragraph directing me how to refactor the code to make it cleaner. Be direct and to the point, but also clear.\n\nFormat your suggestion as a request, and start it with the phrase \"Improve code quality by\""
 
             # Send the prompt to an LLM and get the response
             model_name = "gpt-4-turbo"  # TODO Get the configured model
             messages = [{"role": "user", "content": prompt}]
-            print("Before send with retries")
+            # print("Before send with retries")  # TODO simple_send_with_retries blocks here
             response = simple_send_with_retries(model_name, messages)
-            print("After send with retries")
-            state["have_we_made_response"] = True
-            state["suggested_text"] = response
+            # print("After send with retries")
+            nonlocal suggested_text
+            suggested_text = response
+
+        async def wrapper():
+            with ThreadPoolExecutor() as pool:
+                await loop.run_in_executor(
+                    pool, background_process)
+            return
 
         # Start background_process in the background
         try:
@@ -236,7 +241,8 @@ class InputOutput:
         except RuntimeError:  # No running event loop
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
-        loop.create_task(background_process(shared_state))
+        # loop.create_task(background_process(shared_state))
+        loop.create_task(wrapper())
 
         while True:  # For multi-line input
             completer_instance = AutoCompleter(
@@ -268,14 +274,14 @@ class InputOutput:
 
             session = PromptSession(key_bindings=kb, **session_kwargs)
             while True:
-                if not shared_state["have_we_made_response"]:
+                if suggested_text is None:
                     try:
                         line = loop.run_until_complete(asyncio.wait_for(session.prompt_async(), 3))
                         break
                     except asyncio.TimeoutError:
                         pass
-                    if shared_state["have_we_made_response"]:
-                        print(f"Suggested text: {shared_state['suggested_text']}")
+                    if suggested_text is not None:
+                        print(f"Suggested text: {suggested_text}")
                 else:
                     # Suggestion has already been made
                     line = session.prompt()
@@ -291,9 +297,9 @@ class InputOutput:
                 break
             elif multiline_input:
                 inp += line + "\n"
-            elif shared_state["suggested_text"] is not None and (line.strip() == "y" or line.strip() == "yes" or line.strip() == "accept"):
+            elif suggested_text is not None and (line.strip() == "y" or line.strip() == "yes" or line.strip() == "accept"):
                 print("Using suggested prompt.")
-                inp = shared_state["suggested_text"]
+                inp = suggested_text
                 break
             else:
                 inp = line

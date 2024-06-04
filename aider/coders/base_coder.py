@@ -638,7 +638,8 @@ class Coder:
         now = time.time()
 
         thresh = 2  # seconds
-        if self.last_keyboard_interrupt and now - self.last_keyboard_interrupt < thresh:
+        # TODO Put this back!
+        if True: # self.last_keyboard_interrupt and now - self.last_keyboard_interrupt < thresh:
             self.io.tool_error("\n\n^C KeyboardInterrupt")
             sys.exit()
 
