@@ -223,7 +223,7 @@ class InputOutput:
 
         # Kick off background process to get something
         async def background_process(state):
-            asyncio.sleep(5)
+            await asyncio.sleep(5)
             state["have_we_made_response"] = True
             state["suggested_text"] = "Hello! I'm a suggestion!"
 
