@@ -283,6 +283,9 @@ class InputOutput:
                 break
             elif multiline_input:
                 inp += line + "\n"
+            elif shared_state["suggested_text"] is not None and (line.strip() == "y" or line.strip() == "yes" or line.strip() == "accept"):
+                print("Using suggested prompt.")
+                inp = shared_state["suggested_text"]
             else:
                 inp = line
                 break
