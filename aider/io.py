@@ -1,5 +1,6 @@
 import base64
 import os
+import asyncio
 from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
@@ -235,7 +236,12 @@ class InputOutput:
                 event.current_buffer.insert_text("\n")
 
             session = PromptSession(key_bindings=kb, **session_kwargs)
-            line = session.prompt()
+            loop = asyncio.get_event_loop()
+            try:
+                line = loop.run_until_complete(asyncio.wait_for(session.prompt_async(), 3))
+            except asyncio.TimeoutError:
+                print("Timeout occurred. No input received within 3 seconds.")
+                line = None
 
             if line and line[0] == "{" and not multiline_input:
                 multiline_input = True
