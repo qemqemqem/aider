@@ -219,7 +219,7 @@ class InputOutput:
         # Kick off background process to get something
         async def background_process(state):
             shortened_chat_history = self.get_chat_history()[-5000:]
-            prompt = f"This is the log of recent changes to the code base:\n\n```\n{shortened_chat_history}\n```\n\nI think the code has gotten messy and it could be refactored to clean it up.\n\nPlease suggest a refactor. Give your response in exactly one paragraph directing me how to refactor the code to make it cleaner. Be direct and to the point, but also clear."
+            prompt = f"This is the log of recent changes to the code base:\n\n```\n{shortened_chat_history}\n```\n\nI think the code has gotten messy and it could be refactored to clean it up.\n\nPlease suggest a refactor. Give your response in exactly one paragraph directing me how to refactor the code to make it cleaner. Be direct and to the point, but also clear.\n\nFormat your suggestion as a request, and start it with the phrase \"Improve code quality by\""
 
             # Send the prompt to an LLM and get the response
             model_name = "gpt-4-turbo"  # TODO Get the configured model
@@ -273,6 +273,8 @@ class InputOutput:
                 else:
                     # Suggestion has already been made
                     line = session.prompt()
+                    break
+            print(f"Line: {line}")
 
             if line and line[0] == "{" and not multiline_input:
                 multiline_input = True
@@ -286,6 +288,7 @@ class InputOutput:
             elif shared_state["suggested_text"] is not None and (line.strip() == "y" or line.strip() == "yes" or line.strip() == "accept"):
                 print("Using suggested prompt.")
                 inp = shared_state["suggested_text"]
+                break
             else:
                 inp = line
                 break
