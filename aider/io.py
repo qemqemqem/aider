@@ -207,7 +207,23 @@ class InputOutput:
         else:
             style = None
 
-        while True:
+        # State for making suggestions
+        shared_state = {
+            "have_we_made_response": False,
+            "suggested_text": None
+        }
+
+        # Kick off background process to get something
+        async def background_process(state):
+            await asyncio.sleep(5)
+            state["have_we_made_response"] = True
+            state["suggested_text"] = "Hello"
+
+        # Start background_process in the background
+        loop = asyncio.get_event_loop()
+        loop.create_task(background_process(shared_state))
+
+        while True:  # For multi-line input
             completer_instance = AutoCompleter(
                 root, rel_fnames, addable_rel_fnames, commands, self.encoding
             )
@@ -236,12 +252,18 @@ class InputOutput:
                 event.current_buffer.insert_text("\n")
 
             session = PromptSession(key_bindings=kb, **session_kwargs)
-            loop = asyncio.get_event_loop()
-            try:
-                line = loop.run_until_complete(asyncio.wait_for(session.prompt_async(), 3))
-            except asyncio.TimeoutError:
-                print("Timeout occurred. No input received within 3 seconds.")
-                line = None
+            while True:
+                if not shared_state["have_we_made_response"]:
+                    try:
+                        line = loop.run_until_complete(asyncio.wait_for(session.prompt_async(), 3))
+                        break
+                    except asyncio.TimeoutError:
+                        pass
+                    if shared_state["have_we_made_response"]:
+                        print(f"Suggested text: {shared_state['suggested_text']}")
+                else:
+                    # Suggestion has already been made
+                    line = session.prompt()
 
             if line and line[0] == "{" and not multiline_input:
                 multiline_input = True
