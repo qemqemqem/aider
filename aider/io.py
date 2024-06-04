@@ -194,9 +194,6 @@ class InputOutput:
             show += "\n"
         show += "> "
 
-        print("CHAT HISTORY!!!")
-        print(self.get_chat_history())
-
         inp = ""
         multiline_input = False
 
