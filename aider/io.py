@@ -20,7 +20,7 @@ from rich.text import Text
 
 from .dump import dump  # noqa: F401
 from .utils import is_image_file
-from .sendchat import send_with_retries
+from .sendchat import send_with_retries, simple_send_with_retries
 from .sendchat import send_with_retries
 
 
@@ -228,11 +228,9 @@ class InputOutput:
             # Send the prompt to an LLM and get the response
             model_name = "gpt-3.5-turbo"  # Example model name, adjust as needed
             messages = [{"role": "user", "content": prompt}]
-            response = await send_with_retries(model_name, messages, functions=None, stream=False)
+            response = simple_send_with_retries(model_name, messages)
             state["have_we_made_response"] = True
-            state["suggested_text"] = response["choices"][0]["message"]["content"]
-            state["have_we_made_response"] = True
-            state["suggested_text"] = "Hello! I'm a suggestion!"
+            state["suggested_text"] = response
 
         # Start background_process in the background
         loop = asyncio.get_event_loop()
