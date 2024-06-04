@@ -1,6 +1,7 @@
 import base64
 import os
 import asyncio
+import httpx
 from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
@@ -217,6 +218,17 @@ class InputOutput:
         shared_state = {
             "have_we_made_response": False,
             "suggested_text": None
+        }
+
+        async def background_process(state):
+            async with httpx.AsyncClient() as client:
+                response = await client.post(
+                    "https://api.example-llm.com/v1/complete",
+                    json={"prompt": prompt, "max_tokens": 100}
+                )
+                response_data = response.json()
+                state["have_we_made_response"] = True
+                state["suggested_text"] = response_data.get("choices", [{}])[0].get("text", "No response")
         }
 
         # Kick off background process to get something
