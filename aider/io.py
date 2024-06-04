@@ -20,6 +20,7 @@ from rich.text import Text
 
 from .dump import dump  # noqa: F401
 from .utils import is_image_file
+from .sendchat import send_with_retries
 
 
 class AutoCompleter(Completer):
@@ -220,22 +221,11 @@ class InputOutput:
             "suggested_text": None
         }
 
-        async def background_process(state):
-            async with httpx.AsyncClient() as client:
-                response = await client.post(
-                    "https://api.example-llm.com/v1/complete",
-                    json={"prompt": prompt, "max_tokens": 100}
-                )
-                response_data = response.json()
-                state["have_we_made_response"] = True
-                state["suggested_text"] = response_data.get("choices", [{}])[0].get("text", "No response")
-        }
-
         # Kick off background process to get something
         async def background_process(state):
-            await asyncio.sleep(5)
+            asyncio.sleep(5)
             state["have_we_made_response"] = True
-            state["suggested_text"] = "Hello"
+            state["suggested_text"] = "Hello! I'm a suggestion!"
 
         # Start background_process in the background
         loop = asyncio.get_event_loop()
