@@ -224,12 +224,18 @@ class InputOutput:
             # Send the prompt to an LLM and get the response
             model_name = "gpt-4-turbo"  # TODO Get the configured model
             messages = [{"role": "user", "content": prompt}]
+            print("Before send with retries")
             response = simple_send_with_retries(model_name, messages)
+            print("After send with retries")
             state["have_we_made_response"] = True
             state["suggested_text"] = response
 
         # Start background_process in the background
-        loop = asyncio.get_event_loop()
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:  # No running event loop
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
         loop.create_task(background_process(shared_state))
 
         while True:  # For multi-line input
