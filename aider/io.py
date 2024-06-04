@@ -194,6 +194,12 @@ class InputOutput:
             show += "\n"
         show += "> "
 
+        print("CHAT HISTORY!!!")
+        print(self.get_chat_history())
+
+        shortened_chat_history = self.get_chat_history()[-5000:]
+        prompt = f"This is the log of recent changes to the code base:\n\n```\n{shortened_chat_history}\n```\n\nI think the code has gotten messy and it could be refactored to clean it up.\n\nPlease suggest a refactor. Give your response in exactly one paragraph directing me how to refactor the code to make it cleaner."
+
         inp = ""
         multiline_input = False
 
