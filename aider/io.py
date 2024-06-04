@@ -1,8 +1,5 @@
 import base64
 import os
-import threading
-import time
-import random
 from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
@@ -194,17 +191,7 @@ class InputOutput:
         show = " ".join(rel_fnames)
         if len(show) > 10:
             show += "\n"
-        show += "Hey\n> "
-        prompt_update_event = threading.Event()
-
-        def update_prompt():
-            while not prompt_update_event.is_set():
-                random_number = random.randint(0, 100)
-                show = f"Hey {random_number}\n> "
-                time.sleep(1)
-
-        prompt_thread = threading.Thread(target=update_prompt)
-        prompt_thread.start()
+        show += "Hello\n> "
 
         inp = ""
         multiline_input = False
@@ -220,7 +207,6 @@ class InputOutput:
             style = None
 
         while True:
-            show += "wow"
             completer_instance = AutoCompleter(
                 root, rel_fnames, addable_rel_fnames, commands, self.encoding
             )
@@ -249,10 +235,7 @@ class InputOutput:
                 event.current_buffer.insert_text("\n")
 
             session = PromptSession(key_bindings=kb, **session_kwargs)
-            try:
-                line = session.prompt(timeout=1)
-            except TimeoutError:
-                continue
+            line = session.prompt()
 
             if line and line[0] == "{" and not multiline_input:
                 multiline_input = True
@@ -269,8 +252,6 @@ class InputOutput:
 
         print()
         self.user_input(inp)
-        prompt_update_event.set()
-        prompt_thread.join()
         return inp
 
     def add_to_input_history(self, inp):
