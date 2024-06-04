@@ -274,6 +274,7 @@ class GUI:
             self.recent_msgs_empty = st.empty()
 
         if self.prompt_pending():
+            self.check_idle_time()
             self.recent_msgs_empty.empty()
             self.state.recent_msgs_num += 1
 
@@ -350,6 +351,7 @@ class GUI:
         return st.button(args, **kwargs)
 
     def __init__(self):
+        self.last_input_time = time.time()
         self.coder = get_coder()
         self.state = get_state()
 
@@ -365,6 +367,7 @@ class GUI:
 
         user_inp = st.chat_input("Say something")
         if user_inp:
+            self.last_input_time = time.time()
             self.prompt = user_inp
 
         if self.prompt_pending():
@@ -395,6 +398,14 @@ class GUI:
         st.rerun()
 
     def prompt_pending(self):
+        return self.state.prompt is not None
+
+    def check_idle_time(self):
+        current_time = time.time()
+        if current_time - self.last_input_time > 3:
+            fortune_output = subprocess.check_output("fortune", shell=True).decode("utf-8")
+            self.info(fortune_output.strip())
+            self.last_input_time = current_time
         return self.state.prompt is not None
 
     def cost(self):
