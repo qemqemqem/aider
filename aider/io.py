@@ -194,6 +194,9 @@ class InputOutput:
             show += "\n"
         show += "> "
 
+        print("CHAT HISTORY!!!")
+        print(self.get_chat_history())
+
         inp = ""
         multiline_input = False
 
@@ -397,6 +400,7 @@ class InputOutput:
             self.tool_error(f"{self.chat_history_file}: {e}")
             self.tool_error("Use --encoding to set the unicode encoding.")
             return ""
+
     def append_chat_history(self, text, linebreak=False, blockquote=False, strip=True):
         if blockquote:
             if strip:
