@@ -197,10 +197,6 @@ class InputOutput:
             show += "\n"
         show += "> "
 
-        print("CHAT HISTORY!!!")
-        print(self.get_chat_history())
-
-
         inp = ""
         multiline_input = False
 
@@ -223,10 +219,10 @@ class InputOutput:
         # Kick off background process to get something
         async def background_process(state):
             shortened_chat_history = self.get_chat_history()[-5000:]
-            prompt = f"This is the log of recent changes to the code base:\n\n```\n{shortened_chat_history}\n```\n\nI think the code has gotten messy and it could be refactored to clean it up.\n\nPlease suggest a refactor. Give your response in exactly one paragraph directing me how to refactor the code to make it cleaner."
+            prompt = f"This is the log of recent changes to the code base:\n\n```\n{shortened_chat_history}\n```\n\nI think the code has gotten messy and it could be refactored to clean it up.\n\nPlease suggest a refactor. Give your response in exactly one paragraph directing me how to refactor the code to make it cleaner. Be direct and to the point, but also clear."
 
             # Send the prompt to an LLM and get the response
-            model_name = "gpt-3.5-turbo"  # Example model name, adjust as needed
+            model_name = "gpt-4-turbo"  # TODO Get the configured model
             messages = [{"role": "user", "content": prompt}]
             response = simple_send_with_retries(model_name, messages)
             state["have_we_made_response"] = True
