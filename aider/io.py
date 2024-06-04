@@ -191,7 +191,7 @@ class InputOutput:
         show = " ".join(rel_fnames)
         if len(show) > 10:
             show += "\n"
-        show += "Hey\n> "
+        show += "Hello\n> "
 
         inp = ""
         multiline_input = False
@@ -207,6 +207,7 @@ class InputOutput:
             style = None
 
         while True:
+            show += "wow"
             completer_instance = AutoCompleter(
                 root, rel_fnames, addable_rel_fnames, commands, self.encoding
             )
