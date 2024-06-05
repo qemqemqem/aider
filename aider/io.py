@@ -1,7 +1,8 @@
 import base64
 import os
 import asyncio
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, _base
+from signal import SIGINT
 
 import httpx
 from collections import defaultdict
@@ -24,6 +25,8 @@ from .dump import dump  # noqa: F401
 from .utils import is_image_file
 from .sendchat import send_with_retries, simple_send_with_retries
 from .sendchat import send_with_retries
+
+from threading import Thread
 
 
 class AutoCompleter(Completer):
@@ -231,8 +234,7 @@ class InputOutput:
 
         async def wrapper():
             with ThreadPoolExecutor() as pool:
-                await loop.run_in_executor(
-                    pool, background_process)
+                await loop.run_in_executor(pool, background_process)
             return
 
         # Start background_process in the background
@@ -241,6 +243,17 @@ class InputOutput:
         except RuntimeError:  # No running event loop
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
+
+        def raise_interrupt():
+            # Cancel all tasks on loop and wait for them to complete
+            tasks = asyncio.all_tasks(loop)
+            for task in tasks:
+                task.cancel()
+            loop.run_until_complete(asyncio.gather(*tasks, return_exceptions=True))
+            raise KeyboardInterrupt()
+
+        loop.add_signal_handler(SIGINT, raise_interrupt)
+
         # loop.create_task(background_process(shared_state))
         loop.create_task(wrapper())
 
