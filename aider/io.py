@@ -280,33 +280,24 @@ class InputOutput:
             async def suggested_text_watcher(session: PromptSession):
                 while True:
                     if suggested_text is not None:
-                        # Check if the buffer is empty
                         if not session.app.current_buffer.text:
-                            # print("\nSuggested text detected! Exiting prompt...")
                             print(f"\nSuggested Improvement: \n\n{suggested_text}\n\n(type 'y' or 'accept' to accept)\n")
                             nonlocal prompt_again
                             prompt_again = True
 
-                            # Cancel the prompt_task
+                            # Cancel the prompt_task, then wait for the task to be cancelled
                             prompt_task.cancel()
-
-                            # Wait for the task to be cancelled
                             try:
                                 await prompt_task
                             except asyncio.CancelledError:
                                 pass
 
                             return ""
-                        # else:
-                        #     print("\nSuggested text detected but user is typing. Will not interrupt.")
                     if prompt_task.done():
                         return await prompt_task
-                    await asyncio.sleep(1)  # Check every 1 second
+                    await asyncio.sleep(1)  # Check every so often
 
-            # try:
             line = loop.run_until_complete(suggested_text_watcher(session))
-            # except Exception as e:
-            #     print(f"Error: {e}")
 
             if prompt_again:
                 line = session.prompt()
