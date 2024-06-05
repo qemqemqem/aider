@@ -276,6 +276,7 @@ class InputOutput:
             prompt_task = loop.create_task(session.prompt_async())
 
             prompt_again = False
+
             async def suggested_text_watcher(session: PromptSession):
                 while True:
                     if suggested_text is not None:
@@ -286,9 +287,14 @@ class InputOutput:
                             nonlocal prompt_again
                             prompt_again = True
 
-                            # Kill prompt_task
-                            # prompt_task.cancel()
-                            session.app.exit()
+                            # Cancel the prompt_task
+                            prompt_task.cancel()
+
+                            # Wait for the task to be cancelled
+                            try:
+                                await prompt_task
+                            except asyncio.CancelledError:
+                                pass
 
                             return ""
                         # else:
