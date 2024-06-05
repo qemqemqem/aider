@@ -218,7 +218,7 @@ class InputOutput:
         # Kick off background process to get something
         def background_process():
             shortened_chat_history = self.get_chat_history()[-5000:]
-            prompt = f"This is the log of recent changes to the code base:\n\n```\n{shortened_chat_history}\n```\n\nI think the code has gotten messy and it could be refactored to clean it up.\n\nPlease suggest a refactor. Give your response in exactly one paragraph directing me how to refactor the code to make it cleaner. Be direct and to the point, but also clear.\n\nFormat your suggestion as a request, and start it with the phrase \"Improve code quality by\""
+            prompt = f"This is the log of recent changes to the code base:\n\n```\n{shortened_chat_history}\n```\n\nI think the code has gotten messy and it could be refactored to clean it up.\n\nPlease suggest a refactor. Give your response in 30 words or less directing me how to refactor the code to make it cleaner. Take into account the recent edits and refer to something specific that could be improved.\n\nFormat your suggestion as a request, and start it with the phrase \"Improve code quality by\""
 
             # Send the prompt to an LLM and get the response
             model_name = "gpt-4-turbo"  # TODO Get the configured model
@@ -273,20 +273,37 @@ class InputOutput:
                 event.current_buffer.insert_text("\n")
 
             session = PromptSession(key_bindings=kb, **session_kwargs)
-            while True:
-                if suggested_text is None:
-                    try:
-                        line = loop.run_until_complete(asyncio.wait_for(session.prompt_async(), 3))
-                        break
-                    except asyncio.TimeoutError:
-                        pass
+            prompt_task = loop.create_task(session.prompt_async())
+
+            prompt_again = False
+            async def suggested_text_watcher(session: PromptSession):
+                while True:
                     if suggested_text is not None:
-                        print(f"Suggested text: {suggested_text}")
-                else:
-                    # Suggestion has already been made
-                    line = session.prompt()
-                    break
-            print(f"Line: {line}")
+                        # Check if the buffer is empty
+                        if not session.app.current_buffer.text:
+                            # print("\nSuggested text detected! Exiting prompt...")
+                            print(f"\nSuggested Improvement: \n\n{suggested_text}\n\n(type 'y' or 'accept' to accept)\n")
+                            nonlocal prompt_again
+                            prompt_again = True
+
+                            # Kill prompt_task
+                            # prompt_task.cancel()
+                            session.app.exit()
+
+                            return ""
+                        # else:
+                        #     print("\nSuggested text detected but user is typing. Will not interrupt.")
+                    if prompt_task.done():
+                        return await prompt_task
+                    await asyncio.sleep(1)  # Check every 1 second
+
+            # try:
+            line = loop.run_until_complete(suggested_text_watcher(session))
+            # except Exception as e:
+            #     print(f"Error: {e}")
+
+            if prompt_again:
+                line = session.prompt()
 
             if line and line[0] == "{" and not multiline_input:
                 multiline_input = True
