@@ -638,7 +638,7 @@ class Coder:
         now = time.time()
 
         thresh = 2  # seconds
-        # TODO Put this back!
+        # TODO This seems bad
         if self.last_keyboard_interrupt and now - self.last_keyboard_interrupt < thresh:
             self.io.tool_error("\n\n^C KeyboardInterrupt")
             sys.exit()

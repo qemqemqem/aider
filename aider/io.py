@@ -221,7 +221,31 @@ class InputOutput:
         # Kick off background process to get something
         def background_process():
             shortened_chat_history = self.get_chat_history()[-5000:]
-            prompt = f"This is the log of recent changes to the code base:\n\n```\n{shortened_chat_history}\n```\n\nI think the code has gotten messy and it could be refactored to clean it up.\n\nPlease suggest a refactor. Give your response in 30 words or less directing me how to refactor the code to make it cleaner. Take into account the recent edits and refer to something specific that could be improved.\n\nFormat your suggestion as a request, and start it with the phrase \"Improve code quality by\""
+            prompt = f"""This is the log of recent changes to the code base:
+            
+```
+{shortened_chat_history}
+```
+
+I think the code has gotten messy and it could be refactored to clean it up. Please look at the recent changes and think about how they've impacted the architecture of the software in ways that might make it harder to work in this codebase in the future. In addition, look for opportunities to make the code nicer to work with. It may help to imagine future feature requests that might come up. Take into account the recent edits and refer to specific things that could be improved.
+
+Fill out this form:
+
+# Architecture Issues
+
+* Issue 1
+* Issue 2
+* etc
+
+# Possible Refactors
+
+* Idea 1
+* Idea 2
+* etc
+
+# Suggested Refactor
+
+[Choosing one idea from above, give your response in 30 words or less directing me how to refactor the code to make it cleaner. Format your suggestion as a request, and start it with the phrase \"Improve code quality by\" or a similar phrase.]"""
 
             # Send the prompt to an LLM and get the response
             model_name = "gpt-4-turbo"  # TODO Get the configured model
@@ -230,7 +254,10 @@ class InputOutput:
             response = simple_send_with_retries(model_name, messages)
             # print("After send with retries")
             nonlocal suggested_text
-            suggested_text = response
+            if "Suggested Refactor" in response:
+                suggested_text = response.split("Suggested Refactor")[1].strip()
+            else:
+                suggested_text = response
 
         async def wrapper():
             with ThreadPoolExecutor() as pool:
@@ -246,10 +273,11 @@ class InputOutput:
 
         def raise_interrupt():
             # Cancel all tasks on loop and wait for them to complete
+            print("Raising interrupt...")
             tasks = asyncio.all_tasks(loop)
             for task in tasks:
                 task.cancel()
-            loop.run_until_complete(asyncio.gather(*tasks, return_exceptions=True))
+            # loop.run_until_complete(asyncio.gather(*tasks, return_exceptions=True))
             raise KeyboardInterrupt()
 
         loop.add_signal_handler(SIGINT, raise_interrupt)
