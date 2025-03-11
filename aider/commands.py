@@ -1084,10 +1084,10 @@ class Commands:
         """Improve documentation without changing functional code. If no prompt provided, switches to code mode."""  # noqa
         # Track the command usage for analytics
         self.coder.event("command_document")
-        
+    
         # If no args, we use the same edit format as code
         if not args.strip():
-            return self.cmd_chat_mode(self.coder.main_model.edit_format)
+            return self._generic_chat_command("", self.coder.main_model.edit_format)
         
         # Add documentation-specific instructions as a wrapper around the user's message
         doc_prefix = """
