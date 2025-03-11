@@ -1600,8 +1600,8 @@ should I include in my context to better understand and work with this file?
 Here are all the available files:
 {os.linesep.join(['- ' + f for f in other_files[:100]])}  # Limit to 100 files to avoid token limits
 
-Please respond with a list of the most relevant files (up to 5) that would help me understand 
-and work with `{focus_file}`. Format your response as a JSON array of filenames, like this:
+RESPOND ONLY WITH A JSON ARRAY of the most relevant files (up to 5) that would help me understand 
+and work with `{focus_file}`. For example:
 ["file1.py", "file2.py"]
 
 Only include files that are directly related to `{focus_file}` in terms of:
@@ -1612,30 +1612,45 @@ Only include files that are directly related to `{focus_file}` in terms of:
 5. Related functionality
 
 If you're not sure about the relationships, make your best guess based on the filenames.
+DO NOT include any explanation, just the JSON array.
 """
 
         # Get the response from the LLM
         try:
             messages = [{"role": "user", "content": prompt}]
             response = self.coder.main_model.simple_send_with_retries(messages)
-            content = response.get("content", "")
+            # Handle different response formats - could be a dict or a string
+            if isinstance(response, dict):
+                content = response.get("content", "")
+            else:
+                content = str(response)
             
-            # Extract the JSON array from the response
-            # Look for JSON array in the response
-            match = re.search(r'\[.*\]', content, re.DOTALL)
-            if match:
-                json_str = match.group(0)
-                try:
-                    related_files = json.loads(json_str)
+            # Try to extract JSON array from the response
+            # First try direct JSON parsing of the entire content
+            try:
+                # Try parsing the entire response as JSON
+                parsed_json = json.loads(content)
+                if isinstance(parsed_json, list):
+                    related_files = parsed_json
                     # Filter out any files that don't exist
                     related_files = [f for f in related_files if f in other_files]
                     return related_files
-                except json.JSONDecodeError:
-                    self.io.tool_error("Failed to parse the LLM's response as JSON.")
+            except json.JSONDecodeError:
+                # If that fails, try to extract a JSON array using regex
+                match = re.search(r'\[.*?\]', content, re.DOTALL)
+                if match:
+                    json_str = match.group(0)
+                    try:
+                        related_files = json.loads(json_str)
+                        # Filter out any files that don't exist
+                        related_files = [f for f in related_files if f in other_files]
+                        return related_files
+                    except json.JSONDecodeError:
+                        self.io.tool_error("Failed to parse the LLM's response as JSON.")
+                        return []
+                else:
+                    self.io.tool_error("The LLM didn't provide a valid JSON response.")
                     return []
-            else:
-                self.io.tool_error("The LLM didn't provide a valid JSON response.")
-                return []
         except Exception as e:
             self.io.tool_error(f"Error getting related files: {str(e)}")
             return []
