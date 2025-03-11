@@ -685,12 +685,6 @@ class Commands:
         files = files - set(self.coder.get_inchat_relative_files())
         files = [self.quote_fname(fn) for fn in files]
         return files
-        
-    def completions_document(self):
-        files = set(self.coder.get_all_relative_files())
-        files = files - set(self.coder.get_inchat_relative_files())
-        files = [self.quote_fname(fn) for fn in files]
-        return files
 
     def glob_filtered_to_repo(self, pattern):
         if not pattern.strip():
@@ -1080,6 +1074,12 @@ class Commands:
         """Ask for changes to your code. If no prompt provided, switches to code mode."""  # noqa
         return self._generic_chat_command(args, self.coder.main_model.edit_format)
 
+    def completions_document(self):
+        files = set(self.coder.get_all_relative_files())
+        files = files - set(self.coder.get_inchat_relative_files())
+        files = [self.quote_fname(fn) for fn in files]
+        return files
+        
     def cmd_document(self, args):
         """Improve documentation without changing functional code. If no prompt provided, switches to document mode."""  # noqa
         # Track the command usage for analytics
