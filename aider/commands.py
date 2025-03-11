@@ -1081,7 +1081,7 @@ class Commands:
         return self._generic_chat_command(args, self.coder.main_model.edit_format)
 
     def cmd_document(self, args):
-        """Improve documentation without changing functional code. If no prompt provided, switches to code mode."""  # noqa
+        """Improve documentation without changing functional code. If no prompt provided, switches to document mode."""  # noqa
         # Track the command usage for analytics
         self.coder.event("command_document")
     
