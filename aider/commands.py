@@ -685,6 +685,11 @@ class Commands:
         files = files - set(self.coder.get_inchat_relative_files())
         files = [self.quote_fname(fn) for fn in files]
         return files
+        
+    def completions_document(self):
+        # Document command doesn't need special completions,
+        # but we provide an empty implementation for consistency
+        return []
 
     def glob_filtered_to_repo(self, pattern):
         if not pattern.strip():
@@ -1073,6 +1078,45 @@ class Commands:
     def cmd_code(self, args):
         """Ask for changes to your code. If no prompt provided, switches to code mode."""  # noqa
         return self._generic_chat_command(args, self.coder.main_model.edit_format)
+
+    def cmd_document(self, args):
+        """Improve documentation without changing functional code. If no prompt provided, switches to code mode."""  # noqa
+        # Track the command usage for analytics
+        self.coder.event("command_document")
+        
+        # If no args, we use the same edit format as code
+        if not args.strip():
+            return self.cmd_chat_mode(self.coder.main_model.edit_format)
+        
+        # Add documentation-specific instructions as a wrapper around the user's message
+        doc_prefix = """
+I need help improving the documentation for these files. Please focus ONLY on documentation changes 
+(comments, docstrings, markdown, etc.) without modifying any functional code.
+
+Focus EXCLUSIVELY on:
+- Adding or improving comments in code files
+- Updating markdown (.md) files
+- Enhancing text (.txt) documentation
+- Improving docstrings and function/class documentation
+- Adding usage examples in comments
+
+DO NOT:
+- Change any functional code logic
+- Modify variable names, function signatures, or class structures
+- Alter imports or dependencies
+- Change any code that isn't a comment or documentation string
+
+Here's what I need:
+"""
+        
+        # Combine the prefix with the user's message
+        enhanced_args = doc_prefix + "\n\n" + args
+        
+        # Add the original command to input history for better UX
+        self.io.add_to_input_history(f"/document {args}")
+        
+        # Use the existing generic chat command with the enhanced message
+        return self._generic_chat_command(enhanced_args, self.coder.main_model.edit_format)
 
     def cmd_architect(self, args):
         """Enter architect/editor mode using 2 different models. If no prompt provided, switches to architect/editor mode."""  # noqa
