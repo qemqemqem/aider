@@ -687,9 +687,10 @@ class Commands:
         return files
         
     def completions_document(self):
-        # Document command doesn't need special completions,
-        # but we provide an empty implementation for consistency
-        return []
+        files = set(self.coder.get_all_relative_files())
+        files = files - set(self.coder.get_inchat_relative_files())
+        files = [self.quote_fname(fn) for fn in files]
+        return files
 
     def glob_filtered_to_repo(self, pattern):
         if not pattern.strip():
