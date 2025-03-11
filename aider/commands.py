@@ -1,4 +1,5 @@
 import glob
+import json
 import os
 import re
 import subprocess
@@ -1514,6 +1515,130 @@ Just show me the edits I need to make.
             )
         except Exception as e:
             self.io.tool_error(f"An unexpected error occurred while copying to clipboard: {str(e)}")
+            
+    def cmd_focus(self, args):
+        "Focus on a specific file and its related files, dropping others from the chat"
+        
+        if not args.strip():
+            self.io.tool_error("Please specify a file to focus on.")
+            return
+
+        # Parse the filename from args
+        filenames = parse_quoted_filenames(args)
+        if not filenames:
+            self.io.tool_error("Please specify a valid file to focus on.")
+            return
+        
+        focus_file = filenames[0]
+        
+        # Convert to absolute path if needed
+        if os.path.isabs(focus_file):
+            abs_focus_file = focus_file
+            rel_focus_file = self.coder.get_rel_fname(abs_focus_file)
+        else:
+            rel_focus_file = focus_file
+            abs_focus_file = self.coder.abs_root_path(rel_focus_file)
+        
+        # Check if the file exists
+        if not os.path.exists(abs_focus_file):
+            self.io.tool_error(f"File '{focus_file}' not found.")
+            return
+        
+        # Make sure the focus file is in the chat
+        if abs_focus_file not in self.coder.abs_fnames:
+            self.coder.abs_fnames.add(abs_focus_file)
+            self.io.tool_output(f"Added {rel_focus_file} to the chat.")
+        
+        # Get all files in the repo
+        all_files = self.coder.get_all_relative_files()
+        
+        # Remove the focus file from the list
+        other_files = [f for f in all_files if f != rel_focus_file]
+        
+        # Ask the LLM which files are related to the focus file
+        self.io.tool_output(f"Analyzing relationships for {rel_focus_file}...")
+        related_files = self._get_related_files(rel_focus_file, other_files)
+        
+        if not related_files:
+            self.io.tool_output(f"No related files found for {rel_focus_file}.")
+            # Keep only the focus file
+            current_files = list(self.coder.abs_fnames)
+            for file in current_files:
+                rel_file = self.coder.get_rel_fname(file)
+                if rel_file != rel_focus_file:
+                    self.coder.abs_fnames.remove(file)
+                    self.io.tool_output(f"Dropped {rel_file} from the chat.")
+            return
+        
+        # Drop all files except the focus file
+        current_files = list(self.coder.abs_fnames)
+        for file in current_files:
+            rel_file = self.coder.get_rel_fname(file)
+            if rel_file != rel_focus_file and rel_file not in related_files:
+                self.coder.abs_fnames.remove(file)
+                self.io.tool_output(f"Dropped {rel_file} from the chat.")
+        
+        # Add the related files
+        for file in related_files:
+            if file != rel_focus_file:  # Skip the focus file as it's already added
+                abs_file = self.coder.abs_root_path(file)
+                if abs_file not in self.coder.abs_fnames:
+                    self.coder.abs_fnames.add(abs_file)
+                    self.io.tool_output(f"Added related file: {file}")
+        
+        self.io.tool_output(f"Now focusing on {rel_focus_file} and {len(related_files)} related files.")
+
+    def _get_related_files(self, focus_file, other_files):
+        """
+        Ask the LLM to suggest files related to the focus file.
+        """
+        # Prepare a prompt for the LLM
+        prompt = f"""
+I want to focus on the file `{focus_file}`. Based on this file, which other files in the repository 
+should I include in my context to better understand and work with this file?
+
+Here are all the available files:
+{os.linesep.join(['- ' + f for f in other_files[:100]])}  # Limit to 100 files to avoid token limits
+
+Please respond with a list of the most relevant files (up to 5) that would help me understand 
+and work with `{focus_file}`. Format your response as a JSON array of filenames, like this:
+["file1.py", "file2.py"]
+
+Only include files that are directly related to `{focus_file}` in terms of:
+1. Imports/dependencies
+2. Inheritance relationships
+3. Function calls between files
+4. Shared data structures
+5. Related functionality
+
+If you're not sure about the relationships, make your best guess based on the filenames.
+"""
+
+        # Get the response from the LLM
+        try:
+            messages = [{"role": "user", "content": prompt}]
+            response = self.coder.main_model.simple_send_with_retries(messages)
+            content = response.get("content", "")
+            
+            # Extract the JSON array from the response
+            # Look for JSON array in the response
+            match = re.search(r'\[.*\]', content, re.DOTALL)
+            if match:
+                json_str = match.group(0)
+                try:
+                    related_files = json.loads(json_str)
+                    # Filter out any files that don't exist
+                    related_files = [f for f in related_files if f in other_files]
+                    return related_files
+                except json.JSONDecodeError:
+                    self.io.tool_error("Failed to parse the LLM's response as JSON.")
+                    return []
+            else:
+                self.io.tool_error("The LLM didn't provide a valid JSON response.")
+                return []
+        except Exception as e:
+            self.io.tool_error(f"Error getting related files: {str(e)}")
+            return []
 
 
 def expand_subdir(file_path):
