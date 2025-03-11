@@ -107,6 +107,7 @@ class Commands:
             [
                 ("help", "Get help about using aider (usage, config, troubleshoot)."),
                 ("ask", "Ask questions about your code without making any changes."),
+                ("document", "Improve documentation without changing functional code."),
                 ("code", "Ask for changes to your code (using the best edit format)."),
                 (
                     "architect",
@@ -1085,39 +1086,15 @@ class Commands:
         # Track the command usage for analytics
         self.coder.event("command_document")
     
-        # If no args, we use the same edit format as code
+        # If no args, we switch to document mode
         if not args.strip():
-            return self._generic_chat_command("", self.coder.main_model.edit_format)
-        
-        # Add documentation-specific instructions as a wrapper around the user's message
-        doc_prefix = """
-I need help improving the documentation for these files. Please focus ONLY on documentation changes 
-(comments, docstrings, markdown, etc.) without modifying any functional code.
-
-Focus EXCLUSIVELY on:
-- Adding or improving comments in code files
-- Updating markdown (.md) files
-- Enhancing text (.txt) documentation
-- Improving docstrings and function/class documentation
-- Adding usage examples in comments
-
-DO NOT:
-- Change any functional code logic
-- Modify variable names, function signatures, or class structures
-- Alter imports or dependencies
-- Change any code that isn't a comment or documentation string
-
-Here's what I need:
-"""
-        
-        # Combine the prefix with the user's message
-        enhanced_args = doc_prefix + "\n\n" + args
+            return self._generic_chat_command("", "document")
         
         # Add the original command to input history for better UX
         self.io.add_to_input_history(f"/document {args}")
         
         # Use the existing generic chat command with the enhanced message
-        return self._generic_chat_command(enhanced_args, self.coder.main_model.edit_format)
+        return self._generic_chat_command(args, "document")
 
     def cmd_architect(self, args):
         """Enter architect/editor mode using 2 different models. If no prompt provided, switches to architect/editor mode."""  # noqa

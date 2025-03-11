@@ -1,6 +1,7 @@
 from .architect_coder import ArchitectCoder
 from .ask_coder import AskCoder
 from .base_coder import Coder
+from .document_coder import DocumentCoder
 from .editblock_coder import EditBlockCoder
 from .editblock_fenced_coder import EditBlockFencedCoder
 from .editor_editblock_coder import EditorEditBlockCoder
@@ -14,6 +15,7 @@ from .wholefile_coder import WholeFileCoder
 __all__ = [
     HelpCoder,
     AskCoder,
+    DocumentCoder,
     Coder,
     EditBlockCoder,
     EditBlockFencedCoder,
