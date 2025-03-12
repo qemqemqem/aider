@@ -6,8 +6,8 @@ This project is a fork of [aider.chat](https://aider.chat/), an AI pair programm
 
 This enhanced fork includes all the original aider functionality plus two new commands:
 
-- `/focus`: Helps you concentrate on specific parts of your codebase during a session
-- `/document`: Automatically generates or improves documentation for your code
+- `/focus`: Helps you concentrate on specific parts of your codebase during a session by automatically removing files that the LLM determines are not relevant to the focused file, streamlining your workflow
+- `/document`: Similar to the `/code` command but instructs the LLM to specifically focus on documentation tasks rather than code changes
 
 ## Getting Started
 
@@ -30,6 +30,10 @@ The `/document` command helps you generate or improve documentation:
 ```
 /document path/to/file.py
 ```
+
+## Credits
+
+This enhanced fork was developed by Andrew Keenan Richardson, building upon the excellent foundation of the original aider project.
 
 ## Contributing
 
