@@ -1077,6 +1077,10 @@ class Commands:
     def cmd_architect(self, args):
         """Enter architect/editor mode using 2 different models. If no prompt provided, switches to architect/editor mode."""  # noqa
         return self._generic_chat_command(args, "architect")
+        
+    def cmd_document(self, args):
+        """Enter document/editor mode using 2 different models. If no prompt provided, switches to document/editor mode."""  # noqa
+        return self._generic_chat_command(args, "document")
 
     def _generic_chat_command(self, args, edit_format):
         if not args.strip():
