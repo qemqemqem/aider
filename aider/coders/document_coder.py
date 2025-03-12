@@ -7,3 +7,6 @@ class DocumentCoder(EditBlockCoder):
 
     edit_format = "document"
     gpt_prompts = DocumentPrompts()
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
