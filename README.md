@@ -42,6 +42,30 @@ VIDEO END -->
 cog.out(open("aider/website/_includes/get-started.md").read())
 ]]]-->
 
+### Hello World Example
+
+Here's a simple "Hello World" example to get you started with aider:
+
+```bash
+# Install aider
+python -m pip install aider-install
+aider-install
+
+# Create a new directory for your project
+mkdir hello-world
+cd hello-world
+
+# Start aider with your preferred model
+aider --model gpt-4o
+
+# In the aider chat, type:
+# "Create a simple Python hello world script that prints a greeting with the current date and time"
+```
+
+Aider will create a Python script for you, commit it to git, and you can continue enhancing it through natural language requests.
+
+### Quick Installation
+
 If you already have python 3.8-3.13 installed, you can get started quickly like this:
 
 ```bash
