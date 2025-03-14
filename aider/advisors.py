@@ -205,22 +205,68 @@ Please answer this question from the perspective of your persona:
 Provide a thoughtful, detailed response that reflects your expertise and perspective as described in your persona.
 """
         return prompt
+        
+    def generate_advice(self, persona_content, persona_type, question):
+        """Generate advice using the persona.
+        
+        Args:
+            persona_content: The content of the persona file
+            persona_type: The type of advisor persona
+            question: The user's question
+            
+        Returns:
+            The advice from the persona, or None if there was an error
+        """
+        self.io.tool_output(f"Generating advice from the {persona_type} advisor persona...")
+        
+        # Create a prompt that includes the persona and the question
+        advice_prompt = self.create_advice_prompt(persona_content, question)
+        
+        # Create a temporary coder to ask this question
+        from aider.coders.base_coder import Coder
+        
+        advice_coder = Coder.create(
+            io=self.io,
+            from_coder=self.coder,
+            edit_format="ask",
+            summarize_from_coder=False,
+        )
+        
+        # Add the prompt to the messages
+        advice_coder.cur_messages.append({"role": "user", "content": advice_prompt})
+        
+        # Run the LLM to get the advice
+        response = advice_coder.main_model.simple_send_with_retries(advice_coder.cur_messages)
+        
+        # Extract the content from the response
+        if isinstance(response, dict):
+            advice = response.get("content", "")
+        else:
+            advice = str(response)
+        
+        # Add the advice to the chat history
+        self.coder.cur_messages += [
+            {"role": "user", "content": f"Advice from {persona_type} advisor persona:\n\n{advice}"},
+            {"role": "assistant", "content": "I've provided advice based on the requested persona."}
+        ]
+        
+        return advice
 
-    def get_advice(self, question):
-        """Get advice based on the appropriate persona.
+    def get_persona(self, question):
+        """Get or create a persona for the given question.
         
         Args:
             question: The user's question
             
         Returns:
-            The advice from the persona, or None if there was an error
+            A tuple of (persona_content, persona_type) or (None, None) if there was an error
         """
         # Identify which persona should answer this question
         persona_type, existing_file, suggested_file, reasoning = self.identify_persona(question)
         
         if not (existing_file or suggested_file):
             self.io.tool_error("The LLM couldn't identify or suggest a persona file.")
-            return None
+            return None, None
         
         # Get or create the persona content
         if existing_file:
@@ -228,19 +274,19 @@ Provide a thoughtful, detailed response that reflects your expertise and perspec
             self.io.tool_output(f"Reasoning: {reasoning}")
             persona_content = self.get_persona_content(existing_file)
             if not persona_content:
-                return None
+                return None, None
         else:
             self.io.tool_output(f"No existing {persona_type} advisor persona found.")
-            self.io.tool_output(f"Creating new persona at: {suggested_file}")
+            self.io.tool_output(f"Suggested creating new persona at: {suggested_file}")
             self.io.tool_output(f"Reasoning: {reasoning}")
             
             # Confirm with the user before creating a new persona file
             if not self.io.confirm_ask(f"Create new {persona_type} advisor persona?", default="y"):
                 self.io.tool_output("Persona creation cancelled.")
-                return None
+                return None, None
                 
             persona_content = self.create_persona(persona_type, suggested_file, question)
             if not persona_content:
-                return None
+                return None, None
         
-        return question  # Return the original question to be processed by _generic_chat_command
+        return persona_content, persona_type

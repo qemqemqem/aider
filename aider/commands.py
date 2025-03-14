@@ -1078,13 +1078,13 @@ class Commands:
         # [x] 3. Ask LLM to identify which persona should answer this question
         #    - Analyze existing persona files in the repository
         #    - Either select an existing persona or suggest a new one with full path
-        # [ ] 4. If persona file doesn't exist, ask LLM to create it
+        # [x] 4. If persona file doesn't exist, ask LLM to create it
         #    - Generate detailed persona description
         #    - Save to file in suggested location
-        # [ ] 5. Read the persona file content
-        # [ ] 6. Create a prompt that includes the persona and the question
-        # [ ] 7. Run the prompt through the LLM using ask mode
-        # [ ] 8. Return the response to the user
+        # [x] 5. Read the persona file content
+        # [x] 6. Create a prompt that includes the persona and the question
+        # [x] 7. Run the prompt through the LLM using ask mode
+        # [x] 8. Return the response to the user
         
         # 1. Check if the question is empty, return error if it is
         if not args.strip():
@@ -1092,12 +1092,18 @@ class Commands:
             return
 
         advisor_manager = AdvisorManager(self.io, self.coder)
-        result = advisor_manager.get_advice(args)
         
-        if result is None:
+        # Get or create the appropriate persona
+        persona_content, persona_type = advisor_manager.get_persona(args)
+        
+        if persona_content is None:
             return
-            
-        return self._generic_chat_command(args, "advise")
+        
+        # Generate advice using the persona
+        advisor_manager.generate_advice(persona_content, persona_type, args)
+        
+        # No need to call _generic_chat_command as we've already added the advice to the chat history
+        return
 
     def cmd_code(self, args):
         """Ask for changes to your code. If no prompt provided, switches to code mode."""  # noqa
