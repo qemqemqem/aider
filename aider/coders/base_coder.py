@@ -681,7 +681,7 @@ class Coder:
 
         return matches
 
-    def get_repo_map(self, force_refresh=False):
+    def get_repo_map(self, force_refresh=False, include_text_and_md=None):
         if not self.repo_map:
             return
 
@@ -696,12 +696,17 @@ class Coder:
         chat_files = set(self.abs_fnames) | repo_abs_read_only_fnames
         other_files = all_abs_files - chat_files
 
+        # If include_text_and_md is not specified, use the instance value
+        if include_text_and_md is None:
+            include_text_and_md = self.include_text_and_md
+
         repo_content = self.repo_map.get_repo_map(
             chat_files,
             other_files,
             mentioned_fnames=mentioned_fnames,
             mentioned_idents=mentioned_idents,
             force_refresh=force_refresh,
+            include_text_and_md=include_text_and_md,
         )
 
         # fall back to global repo map if files in chat are disjoint from rest of repo
@@ -724,7 +729,7 @@ class Coder:
 
     def get_repo_messages(self):
         repo_messages = []
-        repo_content = self.get_repo_map()
+        repo_content = self.get_repo_map(include_text_and_md=True)
         if repo_content:
             repo_messages += [
                 dict(role="user", content=repo_content),
@@ -767,7 +772,7 @@ class Coder:
             files_content = self.gpt_prompts.files_content_prefix
             files_content += self.get_files_content()
             files_reply = self.gpt_prompts.files_content_assistant_reply
-        elif self.get_repo_map() and self.gpt_prompts.files_no_full_files_with_repo_map:
+        elif self.get_repo_map(include_text_and_md=True) and self.gpt_prompts.files_no_full_files_with_repo_map:
             files_content = self.gpt_prompts.files_no_full_files_with_repo_map
             files_reply = self.gpt_prompts.files_no_full_files_with_repo_map_reply
         else:
