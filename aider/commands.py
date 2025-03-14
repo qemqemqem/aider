@@ -107,6 +107,7 @@ class Commands:
             [
                 ("help", "Get help about using aider (usage, config, troubleshoot)."),
                 ("ask", "Ask questions about your code without making any changes."),
+                ("document", "Improve documentation without changing functional code."),
                 ("code", "Ask for changes to your code (using the best edit format)."),
                 (
                     "architect",
@@ -1073,6 +1074,27 @@ class Commands:
     def cmd_code(self, args):
         """Ask for changes to your code. If no prompt provided, switches to code mode."""  # noqa
         return self._generic_chat_command(args, self.coder.main_model.edit_format)
+
+    def completions_document(self):
+        files = set(self.coder.get_all_relative_files())
+        files = files - set(self.coder.get_inchat_relative_files())
+        files = [self.quote_fname(fn) for fn in files]
+        return files
+        
+    def cmd_document(self, args):
+        """Improve documentation without changing functional code. If no prompt provided, switches to document mode."""  # noqa
+        # Track the command usage for analytics
+        self.coder.event("command_document")
+    
+        # If no args, we switch to document mode
+        if not args.strip():
+            return self._generic_chat_command("", "document")
+        
+        # Add the original command to input history for better UX
+        self.io.add_to_input_history(f"/document {args}")
+        
+        # Use the existing generic chat command with the enhanced message
+        return self._generic_chat_command(args, "document")
 
     def cmd_architect(self, args):
         """Enter architect/editor mode using 2 different models. If no prompt provided, switches to architect/editor mode."""  # noqa

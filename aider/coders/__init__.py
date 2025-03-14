@@ -15,6 +15,7 @@ from .wholefile_coder import WholeFileCoder
 __all__ = [
     HelpCoder,
     AskCoder,
+    DocumentCoder,
     Coder,
     DocumentCoder,
     EditBlockCoder,
