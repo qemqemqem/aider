@@ -52,6 +52,10 @@ Only return valid JSON that can be parsed. Include new lines and tabs so it will
         
         # Get the repository map to help the LLM understand the codebase structure
         repo_map = self.coder.get_repo_map()
+        
+        # Add repository map to the prompt if available
+        if repo_map:
+            prompt += f"\n\nHere is the repository structure to help you understand the codebase:\n\n{repo_map}"
 
         persona_coder = Coder.create(
             io=self.io,
