@@ -52,7 +52,7 @@ Only return valid JSON that can be parsed. Include new lines and tabs so it will
 
         # TODO I think this isn't necessary, but check
         # Get the repository map to help the LLM understand the codebase structure
-        repo_map = self.coder.get_repo_map()
+        repo_map = self.coder.get_repo_map(include_text_and_md=True)
         self.io.tool_output("Saving repository map to file...")
         repo_map_file = Path("/tmp/repo_map.txt")
         with open(repo_map_file, 'w') as f:
