@@ -1074,18 +1074,24 @@ class Commands:
     def cmd_advise(self, args):
         """Creates an advisor persona based on the question, and gives advice based on that persona. If no persona is found, it creates one."""
         # TODO:
-        # 1. Check if the question is empty, return error if it is
-        # 2. Create personas directory if it doesn't exist
-        # 3. Ask LLM to identify which persona should answer this question
+        # [x] 1. Check if the question is empty, return error if it is
+        # [ ] 2. Create personas directory if it doesn't exist
+        # [ ] 3. Ask LLM to identify which persona should answer this question
         #    - Analyze existing persona files in the directory
         #    - Either select an existing persona or suggest a new one
-        # 4. If persona file doesn't exist, ask LLM to create it
+        # [ ] 4. If persona file doesn't exist, ask LLM to create it
         #    - Generate detailed persona description
         #    - Save to file in personas directory
-        # 5. Read the persona file content
-        # 6. Create a prompt that includes the persona and the question
-        # 7. Run the prompt through the LLM using ask mode
-        # 8. Return the response to the user
+        # [ ] 5. Read the persona file content
+        # [ ] 6. Create a prompt that includes the persona and the question
+        # [ ] 7. Run the prompt through the LLM using ask mode
+        # [ ] 8. Return the response to the user
+        
+        # 1. Check if the question is empty, return error if it is
+        if not args.strip():
+            self.io.tool_error("Please provide a question for advice (e.g., /advise what would legal think of this code?)")
+            return
+            
         return self._generic_chat_command(args, "advise")
 
     def cmd_code(self, args):
