@@ -25,7 +25,7 @@ from aider.scrape import Scraper, install_playwright
 from aider.utils import is_image_file
 
 from .dump import dump  # noqa: F401
-
+from aider.advisors import AdvisorManager
 
 class SwitchCoder(Exception):
     def __init__(self, **kwargs):
@@ -1090,10 +1090,7 @@ class Commands:
         if not args.strip():
             self.io.tool_error("Please provide a question for advice (e.g., /advise what would legal think of this code?)")
             return
-        
-        # Use the AdvisorManager to handle the request
-        from aider.advisors import AdvisorManager
-        
+
         advisor_manager = AdvisorManager(self.io, self.coder)
         result = advisor_manager.get_advice(args)
         
