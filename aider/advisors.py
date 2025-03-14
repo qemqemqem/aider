@@ -62,11 +62,9 @@ Only return valid JSON that can be parsed. Do not include any other text in your
             summarize_from_coder=False,
         )
         
-        # Add the prompt to the messages
+        # Run the LLM to get the response
         persona_coder.cur_messages.append({"role": "user", "content": prompt})
-        
-        # Run the LLM to get the response with streaming
-        response = persona_coder.run_stream(prompt)
+        response = persona_coder.run(with_message=prompt)
 
         self.io.tool_output("Here is the response from the LLM:")
         self.io.tool_output(response)
@@ -144,8 +142,9 @@ The description should be comprehensive enough to guide consistent advice-giving
             summarize_from_coder=False,
         )
         
-        # Run the LLM to get the response with streaming
-        response = persona_coder.run_stream(prompt)
+        # Run the LLM to get the response
+        persona_coder.cur_messages.append({"role": "user", "content": prompt})
+        response = persona_coder.run(with_message=prompt)
         
         # Extract the content from the response
         if isinstance(response, dict):
@@ -234,8 +233,9 @@ Provide a thoughtful, detailed response that reflects your expertise and perspec
             summarize_from_coder=False,
         )
         
-        # Run the LLM to get the advice with streaming
-        response = advice_coder.run_stream(advice_prompt)
+        # Run the LLM to get the advice
+        advice_coder.cur_messages.append({"role": "user", "content": advice_prompt})
+        response = advice_coder.run(with_message=advice_prompt)
         
         # Extract the content from the response
         if isinstance(response, dict):
