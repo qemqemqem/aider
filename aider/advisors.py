@@ -24,7 +24,7 @@ class AdvisorManager:
             question: The user's question
             
         Returns:
-            A tuple of (persona_type, existing_file, suggested_file, reasoning)
+            A tuple of (persona_type, existing_file, suggested_file)
         """
         self.io.tool_output("Analyzing your question to find the right advisor persona...")
         
@@ -65,8 +65,8 @@ Only return valid JSON that can be parsed. Do not include any other text in your
         # Add the prompt to the messages
         persona_coder.cur_messages.append({"role": "user", "content": prompt})
         
-        # Run the LLM to get the response
-        response = persona_coder.main_model.simple_send_with_retries(persona_coder.cur_messages)
+        # Run the LLM to get the response with streaming
+        response = persona_coder.run_stream(prompt)
         
         # Extract the content from the response
         if isinstance(response, dict):
@@ -86,18 +86,22 @@ Only return valid JSON that can be parsed. Do not include any other text in your
                     persona_info = json.loads(match.group(1))
                 except json.JSONDecodeError:
                     self.io.tool_error("Failed to parse the LLM's response about the persona.")
-                    return None, None, None, None
+                    return None, None, None
             else:
                 self.io.tool_error("The LLM didn't provide a valid JSON response about the persona.")
-                return None, None, None, None
+                return None, None, None
         
         # Extract the persona information
         persona_type = persona_info.get("persona_type", "advisor")
         existing_file = persona_info.get("existing_file")
         suggested_file = persona_info.get("suggested_file")
-        reasoning = persona_info.get("reasoning", "")
         
-        return persona_type, existing_file, suggested_file, reasoning
+        # Display reasoning to the user
+        reasoning = persona_info.get("reasoning", "")
+        if reasoning:
+            self.io.tool_output(f"Reasoning: {reasoning}")
+        
+        return persona_type, existing_file, suggested_file
 
     def create_persona(self, persona_type, file_path, question):
         """Create a new persona file if it doesn't exist.
@@ -139,11 +143,8 @@ The description should be comprehensive enough to guide consistent advice-giving
             summarize_from_coder=False,
         )
         
-        # Add the prompt to the messages
-        persona_coder.cur_messages.append({"role": "user", "content": prompt})
-        
-        # Run the LLM to get the response
-        response = persona_coder.main_model.simple_send_with_retries(persona_coder.cur_messages)
+        # Run the LLM to get the response with streaming
+        response = persona_coder.run_stream(prompt)
         
         # Extract the content from the response
         if isinstance(response, dict):
@@ -232,11 +233,8 @@ Provide a thoughtful, detailed response that reflects your expertise and perspec
             summarize_from_coder=False,
         )
         
-        # Add the prompt to the messages
-        advice_coder.cur_messages.append({"role": "user", "content": advice_prompt})
-        
-        # Run the LLM to get the advice
-        response = advice_coder.main_model.simple_send_with_retries(advice_coder.cur_messages)
+        # Run the LLM to get the advice with streaming
+        response = advice_coder.run_stream(advice_prompt)
         
         # Extract the content from the response
         if isinstance(response, dict):
@@ -262,7 +260,7 @@ Provide a thoughtful, detailed response that reflects your expertise and perspec
             A tuple of (persona_content, persona_type) or (None, None) if there was an error
         """
         # Identify which persona should answer this question
-        persona_type, existing_file, suggested_file, reasoning = self.identify_persona(question)
+        persona_type, existing_file, suggested_file = self.identify_persona(question)
         
         if not (existing_file or suggested_file):
             self.io.tool_error("The LLM couldn't identify or suggest a persona file.")
@@ -271,14 +269,12 @@ Provide a thoughtful, detailed response that reflects your expertise and perspec
         # Get or create the persona content
         if existing_file:
             self.io.tool_output(f"Found suitable {persona_type} advisor persona in: {existing_file}")
-            self.io.tool_output(f"Reasoning: {reasoning}")
             persona_content = self.get_persona_content(existing_file)
             if not persona_content:
                 return None, None
         else:
             self.io.tool_output(f"No existing {persona_type} advisor persona found.")
             self.io.tool_output(f"Suggested creating new persona at: {suggested_file}")
-            self.io.tool_output(f"Reasoning: {reasoning}")
             
             # Confirm with the user before creating a new persona file
             if not self.io.confirm_ask(f"Create new {persona_type} advisor persona?", default="y"):
