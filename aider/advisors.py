@@ -41,22 +41,12 @@ Please analyze the repository structure and suggest either:
 Your response should be in JSON format:
 {{
   "thinking": "string" // Briefly consider what typ of advisor is appropriate, and then consider files in the repo that might contain a suitable persona
-  "possible_files": ["string", ...], // List of files in the repository that might contain a suitable persona
   "persona_type": "string", // A short name for the type of advisor (e.g., "legal", "security", "performance")
-  "existing_file": "string or null", // Full path to existing file if found, or null if none exists
-  "suggested_file": "string or null", // Suggested full path for a new file if no existing file is appropriate
+  "suggested_file": "string or null", // Full path to existing file if found, or a suggested file if none already exists
 }}
 
 Only return valid JSON that can be parsed. Include new lines and tabs so it will be pretty to a human, but still parseable. Do not include any other text in your response.
 """
-
-        # TODO I think this isn't necessary, but check
-        # Get the repository map to help the LLM understand the codebase structure
-        repo_map = self.coder.get_repo_map(include_text_and_md=True)
-        self.io.tool_output("Saving repository map to file...")
-        repo_map_file = Path("/tmp/repo_map.txt")
-        with open(repo_map_file, 'w') as f:
-            f.write(repo_map)
 
         # # Add repository map to the prompt if available
         # if repo_map:
@@ -101,7 +91,6 @@ Only return valid JSON that can be parsed. Include new lines and tabs so it will
         
         # Extract the persona information
         persona_type = persona_info.get("persona_type", "advisor")
-        existing_file = persona_info.get("existing_file")
         suggested_file = persona_info.get("suggested_file")
         
         # # Display reasoning to the user
@@ -109,7 +98,7 @@ Only return valid JSON that can be parsed. Include new lines and tabs so it will
         # if reasoning:
         #     self.io.tool_output(f"Reasoning: {reasoning}")
         
-        return persona_type, existing_file, suggested_file
+        return persona_type, suggested_file
 
     def create_persona(self, persona_type, file_path, question):
         """Create a new persona file if it doesn't exist.
@@ -272,39 +261,31 @@ Provide a thoughtful, detailed response that reflects your expertise and perspec
             A tuple of (persona_content, persona_type) or (None, None) if there was an error
         """
         # Identify which persona should answer this question
-        persona_type, existing_file, suggested_file = self.identify_persona(question)
+        persona_type, suggested_file = self.identify_persona(question)
         
         # Handle case where neither file exists
-        if not existing_file and not suggested_file:
+        if not suggested_file:
             self.io.tool_error("The LLM couldn't identify or suggest a persona file.")
             return None, None
-        
-        # Use existing file if available
-        if existing_file:
-            self.io.tool_output(f"Found suitable {persona_type} advisor persona in: {existing_file}")
-            persona_content = self.get_persona_content(existing_file)
+
+        # Check if the suggested file already exists
+        if os.path.exists(suggested_file):
+            self.io.tool_output(f"Found suitable {persona_type} advisor persona in: {suggested_file}")
+            persona_content = self.get_persona_content(suggested_file)
             if not persona_content:
                 return None, None
-        # If no existing file but we have a suggested file, treat it as an existing file path
-        elif suggested_file:
-            # Check if the suggested file already exists
-            if os.path.exists(suggested_file):
-                self.io.tool_output(f"Found suitable {persona_type} advisor persona in: {suggested_file}")
-                persona_content = self.get_persona_content(suggested_file)
-                if not persona_content:
-                    return None, None
-            else:
-                # Need to create a new persona file
-                self.io.tool_output(f"No existing {persona_type} advisor persona found.")
-                self.io.tool_output(f"Suggested creating new persona at: {suggested_file}")
-                
-                # Confirm with the user before creating a new persona file
-                if not self.io.confirm_ask(f"Create new {persona_type} advisor persona?", default="y"):
-                    self.io.tool_output("Persona creation cancelled.")
-                    return None, None
-                    
-                persona_content = self.create_persona(persona_type, suggested_file, question)
-                if not persona_content:
-                    return None, None
+        else:
+            # Need to create a new persona file
+            self.io.tool_output(f"No existing {persona_type} advisor persona found.")
+            self.io.tool_output(f"Suggested creating new persona at: {suggested_file}")
+
+            # Confirm with the user before creating a new persona file
+            if not self.io.confirm_ask(f"Create new {persona_type} advisor persona?", default="y"):
+                self.io.tool_output("Persona creation cancelled.")
+                return None, None
+
+            persona_content = self.create_persona(persona_type, suggested_file, question)
+            if not persona_content:
+                return None, None
         
         return persona_content, persona_type

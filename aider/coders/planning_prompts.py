@@ -1,6 +1,18 @@
 from .editblock_prompts import EditBlockPrompts
 
 
+# TODO This file needs to be rewritten!
+# TODO Here's what it's for:
+#  - Creating issues and bugs
+#  - Planning and scoping work that needs to be done, and creating tasks
+#  - Each task should be a .md file with a description of the task, the bug, or the design decision, and a checklist of things that need to be done
+# Issues should probably go in the 'issues' folder
+# Bugs should probably go in the 'bugs' folder
+# Design decisions should probably go in the 'decisions' folder
+# Tell the LLM all of this, so that it can create the files in the right place
+# 
+
+
 class PlanningPrompts(EditBlockPrompts):
     main_system = """Act as an expert technical writer and documentation specialist.
 Your primary purpose is to write and improve documentation.
