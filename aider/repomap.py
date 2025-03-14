@@ -52,10 +52,12 @@ class RepoMap:
         max_context_window=None,
         map_mul_no_files=8,
         refresh="auto",
+        include_text_and_md=False,
     ):
         self.io = io
         self.verbose = verbose
         self.refresh = refresh
+        self.include_text_and_md = include_text_and_md
 
         if not root:
             root = os.getcwd()
@@ -104,6 +106,7 @@ class RepoMap:
         mentioned_fnames=None,
         mentioned_idents=None,
         force_refresh=False,
+        include_text_and_md=None,
     ):
         if self.max_map_tokens <= 0:
             return
@@ -113,6 +116,10 @@ class RepoMap:
             mentioned_fnames = set()
         if not mentioned_idents:
             mentioned_idents = set()
+            
+        # Use instance value if not explicitly provided
+        if include_text_and_md is None:
+            include_text_and_md = self.include_text_and_md
 
         max_map_tokens = self.max_map_tokens
 
@@ -136,6 +143,7 @@ class RepoMap:
                 mentioned_fnames,
                 mentioned_idents,
                 force_refresh,
+                include_text_and_md,
             )
         except RecursionError:
             self.io.tool_error("Disabling repo map, git repo too large?")
@@ -531,12 +539,18 @@ class RepoMap:
         mentioned_fnames=None,
         mentioned_idents=None,
         force_refresh=False,
+        include_text_and_md=None,
     ):
+        # Use instance value if not explicitly provided
+        if include_text_and_md is None:
+            include_text_and_md = self.include_text_and_md
+            
         # Create a cache key
         cache_key = [
             tuple(sorted(chat_fnames)) if chat_fnames else None,
             tuple(sorted(other_fnames)) if other_fnames else None,
             max_map_tokens,
+            include_text_and_md,
         ]
 
         if self.refresh == "auto":
@@ -565,7 +579,7 @@ class RepoMap:
         # If not in cache or force_refresh is True, generate the map
         start_time = time.time()
         result = self.get_ranked_tags_map_uncached(
-            chat_fnames, other_fnames, max_map_tokens, mentioned_fnames, mentioned_idents
+            chat_fnames, other_fnames, max_map_tokens, mentioned_fnames, mentioned_idents, include_text_and_md
         )
         end_time = time.time()
         self.map_processing_time = end_time - start_time
@@ -583,6 +597,7 @@ class RepoMap:
         max_map_tokens=None,
         mentioned_fnames=None,
         mentioned_idents=None,
+        include_text_and_md=False,
     ):
         if not other_fnames:
             other_fnames = list()
@@ -604,12 +619,31 @@ class RepoMap:
         )
 
         other_rel_fnames = sorted(set(self.get_rel_fname(fname) for fname in other_fnames))
+        
+        # Handle text and markdown files if requested
+        text_md_files = []
+        if include_text_and_md:
+            for fname in other_fnames:
+                rel_fname = self.get_rel_fname(fname)
+                if rel_fname.endswith(('.md', '.txt')):
+                    text_md_files.append((rel_fname,))
+        
+        # Get special files (like README, etc.)
         special_fnames = filter_important_files(other_rel_fnames)
         ranked_tags_fnames = set(tag[0] for tag in ranked_tags)
+        
+        # Filter out files already in ranked_tags
         special_fnames = [fn for fn in special_fnames if fn not in ranked_tags_fnames]
         special_fnames = [(fn,) for fn in special_fnames]
-
-        ranked_tags = special_fnames + ranked_tags
+        
+        # Filter text/md files to avoid duplicates
+        if include_text_and_md:
+            text_md_fnames = set(tag[0] for tag in text_md_files)
+            special_fnames = [(fn,) for fn in special_fnames if fn not in text_md_fnames]
+            # Prioritize text and md files by putting them at the beginning
+            ranked_tags = text_md_files + special_fnames + ranked_tags
+        else:
+            ranked_tags = special_fnames + ranked_tags
 
         spin.step()
 
