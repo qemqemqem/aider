@@ -120,6 +120,7 @@ class Coder:
         io=None,
         from_coder=None,
         summarize_from_coder=True,
+        include_text_and_md=False,
         **kwargs,
     ):
         import aider.coders as coders
@@ -143,6 +144,10 @@ class Coder:
 
         if from_coder:
             use_kwargs = dict(from_coder.original_kwargs)  # copy orig kwargs
+            
+            # Pass include_text_and_md if specified
+            if include_text_and_md:
+                use_kwargs['include_text_and_md'] = include_text_and_md
 
             # If the edit format changes, we can't leave old ASSISTANT
             # messages in the chat history. The old edit format will
@@ -322,6 +327,7 @@ class Coder:
         ignore_mentions=None,
         file_watcher=None,
         auto_copy_context=False,
+        include_text_and_md=False,
     ):
         # Fill in a dummy Analytics if needed, but it is never .enable()'d
         self.analytics = analytics if analytics is not None else Analytics()
@@ -334,6 +340,7 @@ class Coder:
         self.abs_root_path_cache = {}
 
         self.auto_copy_context = auto_copy_context
+        self.include_text_and_md = include_text_and_md
 
         self.ignore_mentions = ignore_mentions
         if not self.ignore_mentions:
@@ -481,6 +488,7 @@ class Coder:
                 max_inp_tokens,
                 map_mul_no_files=map_mul_no_files,
                 refresh=map_refresh,
+                include_text_and_md=include_text_and_md,
             )
 
         self.summarizer = summarizer or ChatSummary(
