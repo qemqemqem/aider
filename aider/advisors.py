@@ -67,6 +67,9 @@ Only return valid JSON that can be parsed. Do not include any other text in your
         
         # Run the LLM to get the response with streaming
         response = persona_coder.run_stream(prompt)
+
+        self.io.tool_output("Here is the response from the LLM:")
+        self.io.tool_output(response)
         
         # Extract the content from the response
         if isinstance(response, dict):
@@ -78,18 +81,16 @@ Only return valid JSON that can be parsed. Do not include any other text in your
         try:
             # First try direct JSON parsing
             persona_info = json.loads(content)
-        except json.JSONDecodeError:
+        except json.JSONDecodeError as e:
             # If that fails, try to extract JSON using regex
             match = re.search(r'({.*})', content, re.DOTALL)
             if match:
-                try:
-                    persona_info = json.loads(match.group(1))
-                except json.JSONDecodeError:
-                    self.io.tool_error("Failed to parse the LLM's response about the persona.")
-                    return None, None, None
+                persona_info = json.loads(match.group(1))
             else:
-                self.io.tool_error("The LLM didn't provide a valid JSON response about the persona.")
-                return None, None, None
+                self.io.tool_error(f"Error parsing persona information: {e}")
+                self.io.tool_output("Response content:")
+                self.io.tool_output(content)
+                raise e
         
         # Extract the persona information
         persona_type = persona_info.get("persona_type", "advisor")
