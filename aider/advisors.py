@@ -41,6 +41,7 @@ Please analyze the repository structure and suggest either:
 Your response should be in JSON format:
 {{
   "thinking": "string" // Briefly consider what typ of advisor is appropriate, and then consider files in the repo that might contain a suitable persona
+  "possible_files": ["string", ...], // List of files in the repository that might contain a suitable persona
   "persona_type": "string", // A short name for the type of advisor (e.g., "legal", "security", "performance")
   "existing_file": "string or null", // Full path to existing file if found, or null if none exists
   "suggested_file": "string or null", // Suggested full path for a new file if no existing file is appropriate
@@ -50,8 +51,13 @@ Only return valid JSON that can be parsed. Include new lines and tabs so it will
 """
 
         # TODO I think this isn't necessary, but check
-        # # Get the repository map to help the LLM understand the codebase structure
-        # repo_map = self.coder.get_repo_map()
+        # Get the repository map to help the LLM understand the codebase structure
+        repo_map = self.coder.get_repo_map()
+        self.io.tool_output("Saving repository map to file...")
+        repo_map_file = Path("/tmp/repo_map.txt")
+        with open(repo_map_file, 'w') as f:
+            f.write(repo_map)
+
         # # Add repository map to the prompt if available
         # if repo_map:
         #     prompt += f"\n\nHere is the repository structure to help you understand the codebase:\n\n{repo_map}"
@@ -62,7 +68,7 @@ Only return valid JSON that can be parsed. Include new lines and tabs so it will
         persona_coder = Coder.create(
             io=self.io,
             from_coder=self.coder,
-            main_model=self.coder.weak_model,  # Use the weak model instead of the main model
+            main_model=self.coder.main_model.weak_model,  # Use the weak model instead of the main model
             edit_format="ask",
             summarize_from_coder=False,
         )
@@ -140,7 +146,6 @@ The description should be comprehensive enough to guide consistent advice-giving
         persona_coder = Coder.create(
             io=self.io,
             from_coder=self.coder,
-            main_model=self.coder.weak_model,  # Use the weak model instead of the main model
             edit_format="ask",
             summarize_from_coder=False,
         )
@@ -232,7 +237,6 @@ Provide a thoughtful, detailed response that reflects your expertise and perspec
         advice_coder = Coder.create(
             io=self.io,
             from_coder=self.coder,
-            main_model=self.coder.weak_model,  # Use the weak model instead of the main model
             edit_format="ask",
             summarize_from_coder=False,
         )
