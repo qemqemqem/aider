@@ -52,10 +52,7 @@ Only return valid JSON that can be parsed. Include new lines and tabs so it will
         
         # Get the repository map to help the LLM understand the codebase structure
         repo_map = self.coder.get_repo_map()
-        
-        # Create a temporary coder to ask this question
-        from aider.coders.base_coder import Coder
-        
+
         persona_coder = Coder.create(
             io=self.io,
             from_coder=self.coder,
