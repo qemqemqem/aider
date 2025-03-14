@@ -2,6 +2,7 @@ import json
 import os
 import re
 from pathlib import Path
+from aider.coders.base_coder import Coder
 
 
 class AdvisorManager:
@@ -40,13 +41,13 @@ Please analyze the repository structure and suggest either:
 
 Your response should be in JSON format:
 {{
+  "thinking": "string" // Briefly consider what typ of advisor is appropriate, and then consider files in the repo that might contain a suitable persona
   "persona_type": "string", // A short name for the type of advisor (e.g., "legal", "security", "performance")
   "existing_file": "string or null", // Full path to existing file if found, or null if none exists
   "suggested_file": "string or null", // Suggested full path for a new file if no existing file is appropriate
-  "reasoning": "string" // Brief explanation of your choice
 }}
 
-Only return valid JSON that can be parsed. Do not include any other text in your response.
+Only return valid JSON that can be parsed. Include new lines and tabs so it will be pretty to a human, but still parseable. Do not include any other text in your response.
 """
         
         # Get the repository map to help the LLM understand the codebase structure
@@ -66,8 +67,8 @@ Only return valid JSON that can be parsed. Do not include any other text in your
         persona_coder.cur_messages.append({"role": "user", "content": prompt})
         response = persona_coder.run(with_message=prompt)
 
-        self.io.tool_output("Here is the response from the LLM:")
-        self.io.tool_output(response)
+        # self.io.tool_output("Here is the response from the LLM:")
+        # self.io.tool_output(response)
         
         # Extract the content from the response
         if isinstance(response, dict):
@@ -95,10 +96,10 @@ Only return valid JSON that can be parsed. Do not include any other text in your
         existing_file = persona_info.get("existing_file")
         suggested_file = persona_info.get("suggested_file")
         
-        # Display reasoning to the user
-        reasoning = persona_info.get("reasoning", "")
-        if reasoning:
-            self.io.tool_output(f"Reasoning: {reasoning}")
+        # # Display reasoning to the user
+        # reasoning = persona_info.get("reasoning", "")
+        # if reasoning:
+        #     self.io.tool_output(f"Reasoning: {reasoning}")
         
         return persona_type, existing_file, suggested_file
 
@@ -129,12 +130,9 @@ Please create a detailed description of this persona including:
 4. Tone and communication style
 5. Areas of special focus within their domain
 
-The description should be comprehensive enough to guide consistent advice-giving in the persona's voice.
+The description should be comprehensive enough to guide consistent advice-giving in the persona's voice. Write your response in markdown (.md) format.
 """
-        
-        # Create a temporary coder to ask this question
-        from aider.coders.base_coder import Coder
-        
+
         persona_coder = Coder.create(
             io=self.io,
             from_coder=self.coder,
