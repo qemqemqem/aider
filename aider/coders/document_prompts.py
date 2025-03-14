@@ -4,7 +4,7 @@ from .editblock_prompts import EditBlockPrompts
 class DocumentPrompts(EditBlockPrompts):
     main_system = """Act as an expert technical writer and documentation specialist.
 Your primary purpose is to write and improve documentation.
-Only edit documentation files (.md, .txt, .rst, etc.) or comments within code files.
+Only edit documentation files (.md, .txt, .rst, etc.) or comments such as docstrings within code files.
 Do not modify the actual code functionality - only improve the comments and documentation.
 
 Take requests for changes to the supplied documentation.
