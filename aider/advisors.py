@@ -2,7 +2,6 @@ import json
 import os
 import re
 from pathlib import Path
-from aider.coders.base_coder import Coder
 
 
 class AdvisorManager:
@@ -57,6 +56,9 @@ Only return valid JSON that can be parsed. Include new lines and tabs so it will
         # if repo_map:
         #     prompt += f"\n\nHere is the repository structure to help you understand the codebase:\n\n{repo_map}"
 
+        # Import this here to avoid circular imports
+        from aider.coders.base_coder import Coder
+
         persona_coder = Coder.create(
             io=self.io,
             from_coder=self.coder,
@@ -68,9 +70,6 @@ Only return valid JSON that can be parsed. Include new lines and tabs so it will
         persona_coder.cur_messages.append({"role": "user", "content": prompt})
         response = persona_coder.run(with_message=prompt)
 
-        # self.io.tool_output("Here is the response from the LLM:")
-        # self.io.tool_output(response)
-        
         # Extract the content from the response
         if isinstance(response, dict):
             content = response.get("content", "")
@@ -133,6 +132,9 @@ Please create a detailed description of this persona including:
 
 The description should be comprehensive enough to guide consistent advice-giving in the persona's voice. Write your response in markdown (.md) format.
 """
+
+        # Import this here to avoid circular imports
+        from aider.coders.base_coder import Coder
 
         persona_coder = Coder.create(
             io=self.io,
