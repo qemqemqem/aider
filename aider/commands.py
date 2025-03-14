@@ -108,6 +108,8 @@ class Commands:
                 ("help", "Get help about using aider (usage, config, troubleshoot)."),
                 ("ask", "Ask questions about your code without making any changes."),
                 ("document", "Improve documentation without changing functional code."),
+                ("plan", "Plan and scope changes to your code."),
+                ("advise", "Get advice from a persona."),
                 ("code", "Ask for changes to your code (using the best edit format)."),
                 (
                     "architect",
