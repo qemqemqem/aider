@@ -71,6 +71,7 @@ Only return valid JSON that can be parsed. Include new lines and tabs so it will
             main_model=self.coder.main_model.weak_model,  # Use the weak model instead of the main model
             edit_format="ask",
             summarize_from_coder=False,
+            include_text_and_md=True,  # Prioritize text and markdown files in repo map
         )
         
         # Run the LLM to get the response
@@ -148,6 +149,7 @@ The description should be comprehensive enough to guide consistent advice-giving
             from_coder=self.coder,
             edit_format="ask",
             summarize_from_coder=False,
+            include_text_and_md=True,  # Prioritize text and markdown files in repo map
         )
         
         # Run the LLM to get the response
@@ -239,6 +241,7 @@ Provide a thoughtful, detailed response that reflects your expertise and perspec
             from_coder=self.coder,
             edit_format="ask",
             summarize_from_coder=False,
+            include_text_and_md=True,  # Prioritize text and markdown files in repo map
         )
         
         # Run the LLM to get the advice
