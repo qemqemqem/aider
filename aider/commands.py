@@ -1075,13 +1075,12 @@ class Commands:
         """Creates an advisor persona based on the question, and gives advice based on that persona. If no persona is found, it creates one."""
         # TODO:
         # [x] 1. Check if the question is empty, return error if it is
-        # [ ] 2. Create personas directory if it doesn't exist
-        # [ ] 3. Ask LLM to identify which persona should answer this question
-        #    - Analyze existing persona files in the directory
-        #    - Either select an existing persona or suggest a new one
+        # [x] 3. Ask LLM to identify which persona should answer this question
+        #    - Analyze existing persona files in the repository
+        #    - Either select an existing persona or suggest a new one with full path
         # [ ] 4. If persona file doesn't exist, ask LLM to create it
         #    - Generate detailed persona description
-        #    - Save to file in personas directory
+        #    - Save to file in suggested location
         # [ ] 5. Read the persona file content
         # [ ] 6. Create a prompt that includes the persona and the question
         # [ ] 7. Run the prompt through the LLM using ask mode
@@ -1090,6 +1089,92 @@ class Commands:
         # 1. Check if the question is empty, return error if it is
         if not args.strip():
             self.io.tool_error("Please provide a question for advice (e.g., /advise what would legal think of this code?)")
+            return
+        
+        # 3. Ask LLM to identify which persona should answer this question
+        self.io.tool_output("Analyzing your question to find the right advisor persona...")
+        
+        # Create a prompt to ask the LLM to identify or suggest a persona
+        prompt = f"""
+I need to identify which advisor persona would be best suited to answer this question:
+
+"{args}"
+
+Please analyze the repository structure and suggest either:
+1. An existing file in the repository that contains a suitable advisor persona, or
+2. A new file path and name for creating a persona that would be appropriate for this question.
+
+Your response should be in JSON format:
+{{
+  "persona_type": "string", // A short name for the type of advisor (e.g., "legal", "security", "performance")
+  "existing_file": "string or null", // Full path to existing file if found, or null if none exists
+  "suggested_file": "string or null", // Suggested full path for a new file if no existing file is appropriate
+  "reasoning": "string" // Brief explanation of your choice
+}}
+
+Only return valid JSON that can be parsed. Do not include any other text in your response.
+"""
+        
+        # Get the repository map to help the LLM understand the codebase structure
+        repo_map = self.coder.get_repo_map()
+        
+        # Create a temporary coder to ask this question
+        from aider.coders.base_coder import Coder
+        
+        persona_coder = Coder.create(
+            io=self.io,
+            from_coder=self.coder,
+            edit_format="ask",
+            summarize_from_coder=False,
+        )
+        
+        # Add the prompt to the messages
+        persona_coder.cur_messages.append({"role": "user", "content": prompt})
+        
+        # Run the LLM to get the response
+        response = persona_coder.main_model.simple_send_with_retries(persona_coder.cur_messages)
+        
+        # Extract the content from the response
+        if isinstance(response, dict):
+            content = response.get("content", "")
+        else:
+            content = str(response)
+        
+        # Try to parse the JSON response
+        import json
+        import re
+        
+        try:
+            # First try direct JSON parsing
+            persona_info = json.loads(content)
+        except json.JSONDecodeError:
+            # If that fails, try to extract JSON using regex
+            match = re.search(r'({.*})', content, re.DOTALL)
+            if match:
+                try:
+                    persona_info = json.loads(match.group(1))
+                except json.JSONDecodeError:
+                    self.io.tool_error("Failed to parse the LLM's response about the persona.")
+                    return
+            else:
+                self.io.tool_error("The LLM didn't provide a valid JSON response about the persona.")
+                return
+        
+        # Now we have the persona information
+        persona_type = persona_info.get("persona_type", "advisor")
+        existing_file = persona_info.get("existing_file")
+        suggested_file = persona_info.get("suggested_file")
+        reasoning = persona_info.get("reasoning", "")
+        
+        if existing_file:
+            self.io.tool_output(f"Found suitable {persona_type} advisor persona in: {existing_file}")
+            self.io.tool_output(f"Reasoning: {reasoning}")
+        elif suggested_file:
+            self.io.tool_output(f"No existing {persona_type} advisor persona found.")
+            self.io.tool_output(f"Suggested creating new persona at: {suggested_file}")
+            self.io.tool_output(f"Reasoning: {reasoning}")
+        else:
+            self.io.tool_error("The LLM couldn't identify or suggest a persona file.")
             return
             
         return self._generic_chat_command(args, "advise")
