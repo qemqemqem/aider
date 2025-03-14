@@ -62,6 +62,7 @@ Only return valid JSON that can be parsed. Include new lines and tabs so it will
         persona_coder = Coder.create(
             io=self.io,
             from_coder=self.coder,
+            main_model=self.coder.weak_model,  # Use the weak model instead of the main model
             edit_format="ask",
             summarize_from_coder=False,
         )
@@ -139,6 +140,7 @@ The description should be comprehensive enough to guide consistent advice-giving
         persona_coder = Coder.create(
             io=self.io,
             from_coder=self.coder,
+            main_model=self.coder.weak_model,  # Use the weak model instead of the main model
             edit_format="ask",
             summarize_from_coder=False,
         )
@@ -230,6 +232,7 @@ Provide a thoughtful, detailed response that reflects your expertise and perspec
         advice_coder = Coder.create(
             io=self.io,
             from_coder=self.coder,
+            main_model=self.coder.weak_model,  # Use the weak model instead of the main model
             edit_format="ask",
             summarize_from_coder=False,
         )
