@@ -1071,6 +1071,11 @@ class Commands:
         """Ask questions about the code base without editing any files. If no prompt provided, switches to ask mode."""  # noqa
         return self._generic_chat_command(args, "ask")
 
+    def cmd_advise(self, args):
+        """Creates an advisor persona based on the question, and gives advice based on that persona. If no persona is found, it creates one."""
+        # TODO Make a TODO List here
+        return self._generic_chat_command(args, "advise")
+
     def cmd_code(self, args):
         """Ask for changes to your code. If no prompt provided, switches to code mode."""  # noqa
         return self._generic_chat_command(args, self.coder.main_model.edit_format)
