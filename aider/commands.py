@@ -1567,6 +1567,109 @@ Just show me the edits I need to make.
         except Exception as e:
             self.io.tool_error(f"An unexpected error occurred while copying to clipboard: {str(e)}")
             
+    def cmd_prioritize(self, args):
+        "Analyze all open issues and determine which one is most important to tackle next"
+        
+        # Get the repomap with include_text_and_md=True to ensure all issue files are visible
+        if not self.coder.repo_map:
+            self.io.tool_error("Repository map is not available. Unable to analyze issues.")
+            return
+            
+        # Get all issue files from the repository
+        issue_files = []
+        if self.coder.repo:
+            all_files = self.coder.repo.get_tracked_files()
+            issue_files = [f for f in all_files if f.startswith("issues/") and f.endswith(".md")]
+        
+        if not issue_files:
+            self.io.tool_error("No issue files found in the repository.")
+            return
+            
+        self.io.tool_output(f"Analyzing {len(issue_files)} issues to determine priority...")
+        
+        # Read the content of each issue file
+        issues_data = []
+        for issue_file in issue_files:
+            abs_path = self.coder.abs_root_path(issue_file)
+            content = self.io.read_text(abs_path)
+            if content:
+                issues_data.append({"file": issue_file, "content": content})
+        
+        # Create a prompt for the LLM to evaluate and prioritize issues
+        prompt = self._create_prioritize_prompt(issues_data)
+        
+        # Get the LLM's response
+        messages = [{"role": "user", "content": prompt}]
+        response = self.coder.main_model.simple_send_with_retries(messages)
+        
+        # Parse the response to identify the chosen issue
+        chosen_issue, reasoning = self._parse_prioritize_response(response)
+        
+        if not chosen_issue:
+            self.io.tool_error("Failed to identify a priority issue from the LLM's response.")
+            return
+            
+        # Display the chosen issue and reasoning
+        self.io.tool_output(f"\nPriority issue: {chosen_issue}")
+        self.io.tool_output(f"\nReasoning:\n{reasoning}")
+        
+        # Ask the user to confirm focusing on this issue
+        if self.io.confirm_ask(f"Would you like to focus on {chosen_issue}?", default="y"):
+            # Execute the focus command on the chosen issue
+            self.cmd_focus(chosen_issue)
+    
+    def _create_prioritize_prompt(self, issues_data):
+        """Create a prompt for the LLM to evaluate and prioritize issues."""
+        prompt = """
+You are tasked with analyzing a set of issues from a software project and determining which one is most important to tackle next.
+
+# Issues to analyze:
+
+"""
+        for issue in issues_data:
+            prompt += f"\n## {issue['file']}\n{issue['content']}\n"
+            
+        prompt += """
+# Instructions:
+1. Analyze each issue carefully, considering:
+   - Explicit priority markers in YAML frontmatter
+   - Issue type (bug vs. feature vs. design decision)
+   - Dependencies between issues (via the 'related' field)
+   - Story points (complexity/effort)
+   - Tags that might indicate critical areas
+   - The actual content/description of the issue
+
+2. Determine which issue is most important to tackle next.
+
+3. Provide your response in the following format:
+```
+CHOSEN_ISSUE: [filename of the chosen issue]
+
+REASONING:
+[Your detailed reasoning explaining why this issue should be prioritized]
+```
+
+Be thorough in your analysis but focus on practical factors that would make an issue a priority in a real development environment.
+"""
+        return prompt
+    
+    def _parse_prioritize_response(self, response):
+        """Parse the LLM's response to extract the chosen issue and reasoning."""
+        if isinstance(response, dict):
+            content = response.get("content", "")
+        else:
+            content = str(response)
+            
+        # Extract the chosen issue using regex
+        chosen_issue_match = re.search(r'CHOSEN_ISSUE:\s*(.+?)(?:\n|$)', content)
+        chosen_issue = chosen_issue_match.group(1).strip() if chosen_issue_match else None
+        
+        # Extract the reasoning
+        reasoning_match = re.search(r'REASONING:\s*([\s\S]+?)(?:```|$)', content)
+        reasoning = reasoning_match.group(1).strip() if reasoning_match else ""
+        
+        return chosen_issue, reasoning
+        
     def cmd_focus(self, args):
         "Focus on a specific file and its related files, dropping others from the chat"
         
