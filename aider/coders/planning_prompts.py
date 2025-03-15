@@ -68,6 +68,7 @@ Always reply to the user in {language}.
   status: open
   priority: high
   story_points: 2
+  summary: A one-line summary of the task
   tags:
     - authentication
   affected: auth_module.py
@@ -78,6 +79,7 @@ Always reply to the user in {language}.
   ---
   ```
 - **Story Points:** Tasks should be **1, 2, or 3 story points**. Anything larger should be broken down.
+- **Summary:** Provide a clear, concise one-line summary of the task.
 - **Subtasks:** If a task is too large, **keep the original task** and add `subtasks` in the YAML.
 - **Design Decisions:** If a task is too vague or complex, create a **design decision document** instead of breaking it into subtasks.
 - **Related Tasks:** Use the `related` field to link dependencies, using **full file paths**.
@@ -143,6 +145,7 @@ type: task
 status: open
 priority: medium
 story_points: 2
+summary: Improve error handling in the authentication module
 tags:
   - authentication
 affected: auth_module.py
@@ -178,6 +181,7 @@ type: bug
 status: open
 priority: high
 story_points: 3
+summary: Users randomly logged out during active sessions
 tags:
   - authentication
   - session
@@ -252,6 +256,7 @@ type: task
 status: open
 priority: medium
 story_points: 1
+summary: Update authentication module documentation
 tags:
   - documentation
   - authentication
@@ -340,6 +345,7 @@ type: task
 status: open
 priority: high
 story_points: 2
+summary: Track failed login attempts for security monitoring
 tags:
   - authentication
   - security
@@ -377,6 +383,7 @@ type: design_decision
 status: open
 priority: high
 story_points: 3
+summary: Design and implement API rate limiting
 tags:
   - api
   - security
@@ -411,6 +418,7 @@ type: task
 status: open
 priority: high
 story_points: 2
+summary: Implement API rate limiting middleware
 tags:
   - api
   - security
@@ -442,6 +450,7 @@ type: task
 status: open
 priority: medium
 story_points: 1
+summary: Add Rate Limit Monitoring
 tags:
   - api
   - monitoring
@@ -478,6 +487,7 @@ type: task
 status: open
 priority: medium
 story_points: 3
+summary: Improve project documentation
 tags:
   - documentation
 subtasks:
@@ -510,6 +520,7 @@ type: task
 status: open
 priority: medium
 story_points: 1
+summary: Create API Documentation
 tags:
   - documentation
   - api
