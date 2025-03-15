@@ -3,6 +3,7 @@ type: task
 status: open
 priority: medium
 story_points: 2
+summary: Create issue summarization system for concise representation in repo map
 tags:
   - repomap
   - issues
@@ -10,6 +11,8 @@ tags:
 affected: aider/history.py
 related:
   - decisions/repo_map_content_filtering.md
+  - issues/repo_map_content_prioritization.md
+  - issues/repo_map_file_filtering.md
 ---
 
 # Implement Issue Summarization for Repo Map

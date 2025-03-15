@@ -3,12 +3,15 @@ type: task
 status: open
 priority: medium
 story_points: 2
+summary: Enhance repo map to prioritize content types with different levels of detail
 tags:
   - repomap
   - prioritization
 affected: aider/repomap.py
 related:
   - decisions/repo_map_content_filtering.md
+  - issues/repo_map_file_filtering.md
+  - issues/repo_map_issue_summarization.md
 ---
 
 # Implement Content Prioritization for Repo Map

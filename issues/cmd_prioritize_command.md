@@ -3,10 +3,13 @@ type: task
 status: open
 priority: high
 story_points: 2
+summary: Create a /prioritize command to analyze and focus on the most important issue
 tags:
   - commands
   - productivity
 affected: aider/commands.py
+related:
+  - issues/prioritize_prompt_design.md
 subtasks:
   - issues/prioritize_prompt_design.md
 ---

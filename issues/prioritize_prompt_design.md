@@ -3,6 +3,7 @@ type: design_decision
 status: open
 priority: medium
 story_points: 1
+summary: Design an effective prompt for the LLM to evaluate and prioritize open issues
 tags:
   - commands
   - prompts
