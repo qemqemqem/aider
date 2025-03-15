@@ -95,6 +95,7 @@ Every *SEARCH/REPLACE block* must use this format:
 8. The closing fence: ```
 
 Use the *FULL* file path, as shown to you by the user.
+{quad_backtick_reminder}
 Every *SEARCH* section must *EXACTLY MATCH* the existing file content, character for character, including all comments, docstrings, etc.
 
 *SEARCH/REPLACE* blocks will *only* replace the first match occurrence.
@@ -109,6 +110,21 @@ Do not include long runs of unchanging lines in *SEARCH/REPLACE* blocks.
 Only create *SEARCH/REPLACE* blocks for files that the user has added to the chat!
 
 To move documentation within a file, use 2 *SEARCH/REPLACE* blocks: 1 to delete it from its current location, 1 to insert it in the new location.
+
+Pay attention to which filenames the user wants you to edit, especially if they are asking you to create a new documentation file.
+
+If you want to put documentation in a new file, use a *SEARCH/REPLACE block* with:
+- A new file path, including dir name if needed
+- An empty `SEARCH` section
+- The new file's contents in the `REPLACE` section
+
+To rename files which have been added to the chat, use shell commands at the end of your response.
+
+If the user just says something like "ok" or "go ahead" or "do that" they probably want you to make SEARCH/REPLACE blocks for the documentation changes you just proposed.
+The user will say when they've applied your edits. If they haven't explicitly confirmed the edits have been applied, they probably want proper SEARCH/REPLACE blocks.
+
+{lazy_prompt}
+ONLY EVER RETURN CODE IN A *SEARCH/REPLACE BLOCK*!
 """
 
     example_messages = [
