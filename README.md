@@ -4,10 +4,13 @@ This project is a fork of [aider.chat](https://aider.chat/), an AI pair programm
 
 ## New Features
 
-This enhanced fork includes all the original aider functionality plus two new commands:
+This enhanced fork includes all the original aider functionality plus these new commands:
 
 - `/focus`: Helps you concentrate on specific parts of your codebase during a session by automatically removing files that the LLM determines are not relevant to the focused file, streamlining your workflow
 - `/document`: Similar to the `/code` command but instructs the LLM to specifically focus on documentation tasks rather than code changes
+- `/prioritize`: Analyzes all open issues in your repository and determines which one is most important to tackle next
+- `/advise`: Creates an advisor persona based on your question and gives advice from that perspective (e.g., `/advise Tell me what legal would think of this code`)
+- `/plan`: Helps you create a structured plan for implementing features or changes without making immediate code modifications
 
 ## Getting Started
 
@@ -34,6 +37,36 @@ The `/document` command helps you generate or improve documentation. You can use
 The `/document` command instructs aider to focus exclusively on documentation changes - it will update comments, docstrings, and documentation files without modifying actual code functionality. This is particularly useful when you want to improve code documentation without risking changes to the underlying implementation.
 
 When `/document` is run with no message, aider will enter document mode, which is just like `/code` mode but with a focus on documentation tasks.
+
+### Prioritize Command
+
+The `/prioritize` command analyzes all open issues in your repository and helps you decide which one to work on next:
+
+```
+/prioritize
+```
+
+This command will scan your repository for issue files (typically markdown files in an issues directory), analyze their content, priority markers, dependencies, and other metadata, then recommend the most important issue to tackle next.
+
+### Advise Command
+
+The `/advise` command creates an advisor persona based on your question and provides advice from that perspective:
+
+```
+/advise Tell me what legal would think of this code
+```
+
+This command will either use an existing persona file or create a new one appropriate to your question, then generate advice from that perspective. It's useful for getting specialized feedback on your code from different viewpoints.
+
+### Plan Command
+
+The `/plan` command helps you create a structured plan for implementing features or changes:
+
+```
+/plan Create a plan to implement the foo function
+```
+
+This command focuses on planning rather than immediate code changes. It helps you think through implementation details, identify potential challenges, and create a roadmap for development. When run without arguments, it switches to plan mode.
 
 ## Credits
 
