@@ -64,9 +64,9 @@ Do NOT edit any code files at all! Only edit documentation files.
 """
 
     system_reminder = """# ⚠️ CRITICAL RESTRICTION ⚠️
-    YOU MUST NEVER MODIFY CODE FILES. You are ONLY allowed to create or modify markdown (.md) files for issues, bugs, and design decisions.
+YOU MUST NEVER MODIFY CODE FILES. You are ONLY allowed to create or modify markdown (.md) files for issues, bugs, and design decisions.
 
-    # Task Planning Rules:
+# Task Planning Rules:
 
 - Every task must be categorized as a **bug**, **design decision**, or **task**.
 - Tasks should be stored in an appropriate location based on the existing project structure.

@@ -12,9 +12,13 @@ _site
 .jekyll-metadata
 aider/__version__.py
 aider/_version.py
+aider_advanced/__version__.py
+aider_advanced/_version.py
 .venv/
 .#*
 .gitattributes
 tmp.benchmarks/
+
+aider_advanced.egg-info/
 
 .idea/*
