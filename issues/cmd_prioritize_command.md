@@ -18,7 +18,7 @@ Create a new `/prioritize` command that will ask the LLM to analyze all open iss
 
 ## Checklist
 - [ ] Add `cmd_prioritize` method to the Commands class
-- [ ] Implement logic to gather all open issues
+- [ ] Get the repomap with include_text_and_md=True, to ensure all the issue files are visible
 - [ ] Create a prompt for the LLM to evaluate and prioritize issues
 - [ ] Parse the LLM's response to identify the chosen issue
 - [ ] Automatically execute the `/focus` command on the chosen issue
