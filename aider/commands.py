@@ -1891,8 +1891,8 @@ Example response:
         summary = analysis.get("summary", f"Attempted to implement {feature_name} but encountered issues.")
         explanation = analysis.get("explanation", "")
         
-        # Create a detailed report of the failed attempt
-        failed_attempt_report = f"""# Failed Attempt: {feature_name}
+        # Create a detailed report of the failed attempt using the template
+        failed_attempt_template = """# Failed Attempt: {feature_name}
 
 ## Summary
 {summary}
@@ -1901,21 +1901,43 @@ Example response:
 {explanation}
 
 ## Commits Involved
-"""
-        for commit_hash in analysis.get("feature_commits", []):
-            try:
-                commit = self.coder.repo.repo.commit(commit_hash)
-                failed_attempt_report += f"- {commit.hexsha[:7]}: {commit.message.strip()}\n"
-            except ANY_GIT_ERROR:
-                continue
-                
-        failed_attempt_report += f"""
+{commits_list}
+
 ## Date
-{commits[0].committed_datetime.strftime("%Y-%m-%d %H:%M:%S")}
+{date}
 
 ## Conversation Context
 The following conversation led to this backtracking:
+{conversation}
 """
+        
+        # Build the commits list
+        commits_list = ""
+        for commit_hash in analysis.get("feature_commits", []):
+            try:
+                commit = self.coder.repo.repo.commit(commit_hash)
+                commits_list += f"- {commit.hexsha[:7]}: {commit.message.strip()}\n"
+            except ANY_GIT_ERROR:
+                continue
+        
+        # Build the conversation context
+        conversation = ""
+        all_messages = self.coder.done_messages + self.coder.cur_messages
+        for msg in all_messages[-10:]:  # Last 10 messages
+            if msg["role"] == "user":
+                conversation += f"\n### User\n{msg['content']}\n"
+            elif msg["role"] == "assistant":
+                conversation += f"\n### Assistant\n{msg['content']}\n"
+        
+        # Format the template with all the data
+        failed_attempt_report = failed_attempt_template.format(
+            feature_name=feature_name,
+            summary=summary,
+            explanation=explanation,
+            commits_list=commits_list,
+            date=commits[0].committed_datetime.strftime("%Y-%m-%d %H:%M:%S"),
+            conversation=conversation
+        )
         
         # Add recent conversation context
         all_messages = self.coder.done_messages + self.coder.cur_messages
