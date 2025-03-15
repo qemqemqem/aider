@@ -155,6 +155,36 @@ class Commands:
     def completions_model(self):
         models = litellm.model_cost.keys()
         return models
+        
+    def completions_backtrack(self):
+        # Return a list of potential features/approaches to backtrack from
+        # based on recent commit messages
+        if not self.coder.repo:
+            return []
+            
+        try:
+            commits = list(self.coder.repo.repo.iter_commits(max_count=20))
+            features = set()
+            
+            for commit in commits:
+                # Extract potential feature names from commit messages
+                message = commit.message.strip().lower()
+                
+                # Look for common patterns in commit messages
+                patterns = [
+                    r'add(?:ed|ing)?\s+(\w+)',
+                    r'implement(?:ed|ing)?\s+(\w+)',
+                    r'feat(?:ure)?:\s*(\w+)',
+                    r'refactor(?:ed|ing)?\s+(\w+)',
+                ]
+                
+                for pattern in patterns:
+                    matches = re.findall(pattern, message)
+                    features.update(matches)
+            
+            return sorted(list(features))
+        except ANY_GIT_ERROR:
+            return []
 
     def cmd_models(self, args):
         "Search the list of available models"
@@ -1751,6 +1781,204 @@ If you're not sure about a file, include it anyway.
         # If all else fails, return any markdown files that might be issues
         return [f for f in all_files if f.endswith('.md') and not f.startswith('aider/website/')]
         
+    def cmd_backtrack(self, args):
+        "Go back to a previous state when the current approach isn't working"
+        
+        if not self.coder.repo:
+            self.io.tool_error("No git repository found.")
+            return
+            
+        # Parse the user's request to identify what feature/approach to revert
+        feature_name = args.strip()
+        if not feature_name:
+            self.io.tool_error("Please specify what feature or approach you want to backtrack from.")
+            self.io.tool_output("Example: /backtrack foobar")
+            return
+            
+        # Get commit history
+        try:
+            commits = list(self.coder.repo.repo.iter_commits())
+        except ANY_GIT_ERROR as err:
+            self.io.tool_error(f"Unable to retrieve git history: {err}")
+            return
+            
+        if not commits:
+            self.io.tool_error("No commits found in the repository.")
+            return
+            
+        # Find commits related to the specified feature/approach
+        self.io.tool_output(f"Searching for commits related to '{feature_name}'...")
+        
+        # Create a prompt for the LLM to analyze commit history
+        commit_info = []
+        for commit in commits[:20]:  # Limit to recent 20 commits to avoid token limits
+            commit_info.append({
+                "hash": commit.hexsha,
+                "short_hash": commit.hexsha[:7],
+                "message": commit.message.strip(),
+                "date": commit.committed_datetime.strftime("%Y-%m-%d %H:%M:%S"),
+                "files_changed": [item.a_path for item in commit.stats.files]
+            })
+            
+        prompt = f"""
+Analyze these git commits and identify the commit where we started working on the feature/approach '{feature_name}'.
+We want to backtrack to the commit right before we started working on this feature.
+
+Commits (from newest to oldest):
+"""
+        
+        for i, info in enumerate(commit_info):
+            prompt += f"\n{i+1}. {info['short_hash']} ({info['date']}): {info['message']}\n"
+            prompt += f"   Files changed: {', '.join(info['files_changed'][:5])}"
+            if len(info['files_changed']) > 5:
+                prompt += f" and {len(info['files_changed']) - 5} more"
+            prompt += "\n"
+            
+        prompt += """
+Respond with a JSON object containing:
+1. "target_commit": The hash of the commit we should revert to (the one right BEFORE we started working on the feature)
+2. "feature_commits": Array of hashes of all commits related to this feature
+3. "explanation": Brief explanation of your reasoning
+4. "summary": A summary of what was attempted and why it didn't work
+
+Example response:
+{
+  "target_commit": "abc1234",
+  "feature_commits": ["def5678", "ghi9012"],
+  "explanation": "We should revert to abc1234 because it's the commit right before we started implementing the feature.",
+  "summary": "The attempt to implement feature X encountered problems with Y and Z."
+}
+"""
+        
+        # Get the LLM's analysis
+        messages = [{"role": "user", "content": prompt}]
+        response = self.coder.main_model.simple_send_with_retries(messages)
+        
+        if isinstance(response, dict):
+            content = response.get("content", "")
+        else:
+            content = str(response)
+            
+        # Extract JSON from the response
+        import json
+        import re
+        
+        json_match = re.search(r'```json\n(.*?)\n```|(\{.*\})', content, re.DOTALL)
+        if json_match:
+            json_str = json_match.group(1) or json_match.group(2)
+            try:
+                analysis = json.loads(json_str)
+            except json.JSONDecodeError:
+                self.io.tool_error("Failed to parse LLM response as JSON.")
+                return
+        else:
+            self.io.tool_error("LLM did not provide a valid JSON response.")
+            return
+            
+        target_commit = analysis.get("target_commit")
+        if not target_commit:
+            self.io.tool_error("Could not identify a target commit to revert to.")
+            return
+            
+        # Verify the target commit exists
+        try:
+            commit_obj = self.coder.repo.repo.commit(target_commit)
+        except ANY_GIT_ERROR:
+            self.io.tool_error(f"Target commit {target_commit} not found in repository.")
+            return
+            
+        # Create a summary of the failed attempt
+        summary = analysis.get("summary", f"Attempted to implement {feature_name} but encountered issues.")
+        explanation = analysis.get("explanation", "")
+        
+        # Create a detailed report of the failed attempt
+        failed_attempt_report = f"""# Failed Attempt: {feature_name}
+
+## Summary
+{summary}
+
+## Explanation
+{explanation}
+
+## Commits Involved
+"""
+        for commit_hash in analysis.get("feature_commits", []):
+            try:
+                commit = self.coder.repo.repo.commit(commit_hash)
+                failed_attempt_report += f"- {commit.hexsha[:7]}: {commit.message.strip()}\n"
+            except ANY_GIT_ERROR:
+                continue
+                
+        failed_attempt_report += f"""
+## Date
+{commits[0].committed_datetime.strftime("%Y-%m-%d %H:%M:%S")}
+
+## Conversation Context
+The following conversation led to this backtracking:
+"""
+        
+        # Add recent conversation context
+        all_messages = self.coder.done_messages + self.coder.cur_messages
+        for msg in all_messages[-10:]:  # Last 10 messages
+            if msg["role"] == "user":
+                failed_attempt_report += f"\n### User\n{msg['content']}\n"
+            elif msg["role"] == "assistant":
+                failed_attempt_report += f"\n### Assistant\n{msg['content']}\n"
+                
+        # Ask for confirmation
+        self.io.tool_output(f"Found target commit: {commit_obj.hexsha[:7]} - {commit_obj.message.strip()}")
+        self.io.tool_output(f"\nSummary of failed attempt: {summary}")
+        
+        if not self.io.confirm_ask(f"Do you want to backtrack to commit {commit_obj.hexsha[:7]}?", default="y"):
+            self.io.tool_output("Backtracking cancelled.")
+            return
+            
+        # Create the failed_attempts directory if it doesn't exist
+        failed_attempts_dir = os.path.join(self.coder.root, "failed_attempts")
+        os.makedirs(failed_attempts_dir, exist_ok=True)
+        
+        # Save the failed attempt report
+        timestamp = commits[0].committed_datetime.strftime("%Y%m%d_%H%M%S")
+        sanitized_feature_name = re.sub(r'[^\w\-]', '_', feature_name)
+        report_filename = f"{timestamp}_{sanitized_feature_name}.md"
+        report_path = os.path.join(failed_attempts_dir, report_filename)
+        
+        with open(report_path, "w", encoding=self.io.encoding) as f:
+            f.write(failed_attempt_report)
+            
+        # Perform the git revert
+        try:
+            # Create a new branch for the revert
+            branch_name = f"backtrack_{sanitized_feature_name}_{timestamp}"
+            self.coder.repo.repo.git.checkout("-b", branch_name)
+            
+            # Reset to the target commit
+            self.coder.repo.repo.git.reset("--hard", target_commit)
+            
+            self.io.tool_output(f"Successfully backtracked to commit {commit_obj.hexsha[:7]}.")
+            self.io.tool_output(f"Created new branch: {branch_name}")
+            self.io.tool_output(f"Saved failed attempt documentation to: {report_path}")
+            
+            # Add a message to the chat history about the backtracking
+            backtrack_msg = f"""I've backtracked to commit {commit_obj.hexsha[:7]} because the approach with '{feature_name}' wasn't working.
+
+A record of this failed attempt has been saved to: {report_path}
+
+Summary of what didn't work:
+{summary}
+
+We're now on a new branch '{branch_name}' and can try a different approach.
+"""
+            
+            self.coder.cur_messages += [
+                dict(role="user", content=f"This approach with {feature_name} isn't working. Let's go back and try something else."),
+                dict(role="assistant", content=backtrack_msg),
+            ]
+            
+        except ANY_GIT_ERROR as err:
+            self.io.tool_error(f"Failed to backtrack: {err}")
+            self.io.tool_output("The failed attempt documentation was still saved to: {report_path}")
+            
     def cmd_focus(self, args):
         "Focus on a specific file and its related files, dropping others from the chat"
         
