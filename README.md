@@ -38,6 +38,28 @@ The `/document` command instructs aider to focus exclusively on documentation ch
 
 When `/document` is run with no message, aider will enter document mode, which is just like `/code` mode but with a focus on documentation tasks.
 
+### Advise Command
+
+The `/advise` command creates an advisor persona based on your question and provides advice from that perspective:
+
+```
+/advise Tell me what legal would think of this code
+```
+
+This command will either use an existing persona file or create a new one appropriate to your question, then generate advice from that perspective. It's useful for getting specialized feedback on your code from different viewpoints. For example, in the above command, the command will create a "legal" persona and provide advice on the code pretending to be that character. 
+
+### Plan Command
+
+The `/plan` command helps you create a structured plan for implementing features or changes:
+
+```
+/plan Create a plan to implement the foo function
+```
+
+This command focuses on planning rather than immediate code changes. When run without arguments, it switches to plan mode.
+
+When run, it will create issues and bugs in the `issues/` and `bugs/` directories of your repository, respectively. These will be markdown files with YAML frontmatter containing metadata about the task, such as priority, story points, and related issues.
+
 ### Prioritize Command
 
 The `/prioritize` command analyzes all open issues in your repository and helps you decide which one to work on next:
@@ -48,29 +70,11 @@ The `/prioritize` command analyzes all open issues in your repository and helps 
 
 This command will scan your repository for issue files (typically markdown files in an issues directory), analyze their content, priority markers, dependencies, and other metadata, then recommend the most important issue to tackle next.
 
-### Advise Command
-
-The `/advise` command creates an advisor persona based on your question and provides advice from that perspective:
-
-```
-/advise Tell me what legal would think of this code
-```
-
-This command will either use an existing persona file or create a new one appropriate to your question, then generate advice from that perspective. It's useful for getting specialized feedback on your code from different viewpoints.
-
-### Plan Command
-
-The `/plan` command helps you create a structured plan for implementing features or changes:
-
-```
-/plan Create a plan to implement the foo function
-```
-
-This command focuses on planning rather than immediate code changes. It helps you think through implementation details, identify potential challenges, and create a roadmap for development. When run without arguments, it switches to plan mode.
+It's intended to be used after the `/plan` command, to sort through the tasks you've identified and determine which one should be prioritized first. If you accept its suggestion, it will automatically execute the `/focus` command on the chosen issue.
 
 ## Credits
 
-This enhanced fork was developed by Andrew Keenan Richardson, building upon the excellent foundation of the original aider project.
+This enhanced fork was developed by Andrew Keenan Richardson, building upon the excellent foundation of the original aider project. I suppose a great deal of credit goes to aider itself (and Claude), who have contributed a majority of the commits to this codebase. 
 
 ## Contributing
 

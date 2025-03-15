@@ -2,7 +2,7 @@
 type: task
 status: open
 priority: high
-story_points: 2
+story_points: 3
 summary: Create a /prioritize command to analyze and focus on the most important issue
 tags:
   - commands
@@ -24,6 +24,7 @@ Create a new `/prioritize` command that will ask the LLM to analyze all open iss
 - [ ] Get the repomap with include_text_and_md=True, to ensure all the issue files are visible
 - [ ] Create a prompt for the LLM to evaluate and prioritize issues
 - [ ] Parse the LLM's response to identify the chosen issue
+- [ ] Ask the user to confirm the chosen issue and that they would like to /focus on it
 - [ ] Automatically execute the `/focus` command on the chosen issue
 - [ ] Add command to the help documentation
 - [ ] Write tests for the new command
