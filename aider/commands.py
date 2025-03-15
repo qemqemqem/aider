@@ -1897,15 +1897,15 @@ Example response:
             self.io.tool_error(f"Target commit {target_commit} not found in repository.")
             return
             
-        # Extract a feature name from the query
-        feature_name = query.split()[-1] if query else "this approach"
-        
         # Create a summary of the failed attempt
-        summary = analysis.get("summary", f"Attempted to implement {feature_name} but encountered issues.")
+        summary = analysis.get("summary", "Attempted approach encountered issues.")
         explanation = analysis.get("explanation", "")
         
         # Create a detailed report of the failed attempt using the template
-        failed_attempt_template = """# Failed Attempt: {feature_name}
+        failed_attempt_template = """# Failed Attempt
+
+## Query
+{query}
 
 ## Summary
 {summary}
@@ -1944,7 +1944,7 @@ The following conversation led to this backtracking:
         
         # Format the template with all the data
         failed_attempt_report = failed_attempt_template.format(
-            feature_name=feature_name,
+            query=query,
             summary=summary,
             explanation=explanation,
             commits_list=commits_list,
@@ -1960,11 +1960,15 @@ The following conversation led to this backtracking:
             elif msg["role"] == "assistant":
                 failed_attempt_report += f"\n### Assistant\n{msg['content']}\n"
                 
-        # Ask for confirmation
+        # Ask for confirmation with clear warning about git reset --hard
         self.io.tool_output(f"Found target commit: {commit_obj.hexsha[:7]} - {commit_obj.message.strip()}")
         self.io.tool_output(f"\nSummary of failed attempt: {summary}")
+        self.io.tool_output("\nWARNING: This will use 'git reset --hard' which will:")
+        self.io.tool_output("  1. Discard ALL uncommitted changes")
+        self.io.tool_output("  2. Reset your working directory to the state at the target commit")
+        self.io.tool_output("  3. Lose any work not committed to git")
         
-        if not self.io.confirm_ask(f"Do you want to backtrack to commit {commit_obj.hexsha[:7]}?", default="y"):
+        if not self.io.confirm_ask(f"Do you want to backtrack to commit {commit_obj.hexsha[:7]}?", default="n"):
             self.io.tool_output("Backtracking cancelled.")
             return
             
@@ -1974,8 +1978,10 @@ The following conversation led to this backtracking:
         
         # Save the failed attempt report
         timestamp = commits[0].committed_datetime.strftime("%Y%m%d_%H%M%S")
-        sanitized_feature_name = re.sub(r'[^\w\-]', '_', feature_name)
-        report_filename = f"{timestamp}_{sanitized_feature_name}.md"
+        # Create a safe filename from the first few words of the query
+        query_words = re.sub(r'[^\w\s\-]', '', query).split()[:3]
+        safe_query = '_'.join(query_words) if query_words else 'backtrack'
+        report_filename = f"{timestamp}_{safe_query}.md"
         report_path = os.path.join(failed_attempts_dir, report_filename)
         
         with open(report_path, "w", encoding=self.io.encoding) as f:
@@ -2001,7 +2007,7 @@ We can now try a different approach.
 """
             
             self.coder.cur_messages += [
-                dict(role="user", content=f"This isn't working: {query}. Let's go back and try something else."),
+                dict(role="user", content=f"This approach isn't working. Let's go back and try something else: {query}"),
                 dict(role="assistant", content=backtrack_msg),
             ]
             
