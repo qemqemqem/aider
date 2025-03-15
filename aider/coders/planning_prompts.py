@@ -55,6 +55,8 @@ Only edit documentation files (.md, .txt, .rst, etc.) or comments such as docstr
 Do not modify the actual code functionality - only improve the comments and documentation.
 
 Always reply to the user in {language}.
+
+Do NOT edit any code files at all! Only edit documentation files.
 """
 
     system_reminder = """# Task Planning Rules:
