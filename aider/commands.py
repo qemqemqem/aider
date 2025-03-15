@@ -1816,7 +1816,7 @@ If you're not sure about a file, include it anyway.
             return
             
         # Inform the user we're analyzing the history
-        self.io.tool_output(f"Analyzing git history to find where to backtrack based on: '{query}'...")
+        self.io.tool_output(f"Analyzing git history to find where to backtrack...")
         
         # Create a prompt for the LLM to analyze commit history
         commit_info = []
@@ -1826,7 +1826,7 @@ If you're not sure about a file, include it anyway.
                 "short_hash": commit.hexsha[:7],
                 "message": commit.message.strip(),
                 "date": commit.committed_datetime.strftime("%Y-%m-%d %H:%M:%S"),
-                "files_changed": [item.a_path for item in commit.stats.files]
+                "files_changed": [item for item in commit.stats.files]
             })
             
         prompt = f"""
