@@ -1,5 +1,7 @@
 # Aider - Enhanced Fork
 
+> **⚠️ BETA WARNING**: This enhanced fork is currently in beta. Features may change, break, or be removed without notice. Use at your own risk in production environments.
+
 This project is a fork of [aider.chat](https://aider.chat/), an AI pair programming tool that lets you collaborate with an LLM to edit code in your local Git repository.
 
 ## New Features
@@ -12,9 +14,31 @@ This enhanced fork includes all the original aider functionality plus these new 
 - `/advise`: Creates an advisor persona based on your question and gives advice from that perspective (e.g., `/advise Tell me what legal would think of this code`)
 - `/plan`: Helps you create a structured plan for implementing features or changes without making immediate code modifications
 
+## Installation
+
+You can install this enhanced fork directly from GitHub:
+
+```bash
+pip install git+https://github.com/yourusername/aider-enhanced-fork.git
+```
+
+Or clone the repository and install locally:
+
+```bash
+git clone https://github.com/yourusername/aider-enhanced-fork.git
+cd aider-enhanced-fork
+pip install -e .
+```
+
+### Requirements
+
+- Python 3.8 or higher
+- Git
+- An API key for your preferred LLM provider (OpenAI, Anthropic, etc.)
+
 ## Getting Started
 
-See the original documentation at [aider.chat](https://aider.chat/) for installation and basic usage instructions.
+See the original documentation at [aider.chat](https://aider.chat/) for basic usage instructions.
 
 ## Using the New Commands
 
