@@ -1897,6 +1897,9 @@ Example response:
             self.io.tool_error(f"Target commit {target_commit} not found in repository.")
             return
             
+        # Extract a feature name from the query
+        feature_name = query.split()[-1] if query else "this approach"
+        
         # Create a summary of the failed attempt
         summary = analysis.get("summary", f"Attempted to implement {feature_name} but encountered issues.")
         explanation = analysis.get("explanation", "")
