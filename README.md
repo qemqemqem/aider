@@ -19,14 +19,24 @@ This enhanced fork includes all the original aider functionality plus these new 
 You can install this enhanced fork directly from GitHub:
 
 ```bash
-pip install git+https://github.com/yourusername/aider-enhanced-fork.git
+pip install git+https://github.com/qemqemqem/aider-advanced.git
+```
+
+For a specific version or branch:
+
+```bash
+# Install from a specific tag
+pip install git+https://github.com/qemqemqem/aider-advanced.git@v0.x.x
+
+# Install from a specific branch
+pip install git+https://github.com/qemqemqem/aider-advanced.git@branch-name
 ```
 
 Or clone the repository and install locally:
 
 ```bash
-git clone https://github.com/yourusername/aider-enhanced-fork.git
-cd aider-enhanced-fork
+git clone https://github.com/qemqemqem/aider-advanced.git
+cd aider-advanced
 pip install -e .
 ```
 
