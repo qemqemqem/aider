@@ -17,6 +17,25 @@ related:
 
 # Git Backtracking and Failed Attempts Documentation
 
+```
+                    EPIC BOXING MATCH
+                    ================
+                         
+                         ROUND 1
+                         
+            DONKEY                  MOOSE
+            ------                  -----
+               ^__^                 \_\__/
+               (oo)\_______          (oo)\       
+               (__)\       )\/\      (__)\ ___   
+                   ||----w |          ||----w|   
+                   ||     ||          ||     ||  
+                   
+                   *DING* *DING* *DING*
+                   
+                   FIGHT! FIGHT! FIGHT!
+```
+
 ## Description
 
 Design a feature that allows aider to naturally interact with git to backtrack to previous states when users indicate that current approaches aren't working. This would include:
