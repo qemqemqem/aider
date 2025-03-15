@@ -26,6 +26,8 @@ from aider.utils import is_image_file
 
 from .dump import dump  # noqa: F401
 from aider.advisors import AdvisorManager
+import json
+import re
 
 class SwitchCoder(Exception):
     def __init__(self, **kwargs):
@@ -1830,7 +1832,11 @@ If you're not sure about a file, include it anyway.
             })
             
         prompt = f"""
-Based on the user's request to backtrack: "{query}", analyze these git commits and identify the best commit to revert to.
+The user has this request to backtrack. The user feels that the code has gotten messed up, and we need to go back to a previous state, by reverting changes in git. 
+
+User Request to Backtrack: {query}
+
+Analyze these git commits and identify the best commit to revert to.
 
 Commits (from newest to oldest):
 """
@@ -1843,13 +1849,17 @@ Commits (from newest to oldest):
             prompt += "\n"
             
         prompt += f"""
-Based on the user's request: "{query}", determine which commit we should revert to.
+Consider the user's request to backtrack. Consider what they want to undo, and what changes they seem to be unhappy about.
+
+User Request to Backtrack: {query}
+
+Now, determine which commit we should revert to.
 
 Respond with a JSON object containing:
 1. "target_commit": The hash of the commit we should revert to
 2. "related_commits": Array of hashes of commits related to what the user wants to backtrack from
 3. "explanation": Brief explanation of your reasoning
-4. "summary": A summary of what was attempted and why it didn't work
+4. "summary": A summary of what was attempted and why it didn't work. This is going to be used as a post-mortem for the failed attempt, so be as detailed as you can. Explain what was tried, and explain what went wrong, as best as you can tell.
 
 Example response:
 {{
@@ -1870,8 +1880,6 @@ Example response:
             content = str(response)
             
         # Extract JSON from the response
-        import json
-        import re
         
         json_match = re.search(r'```json\n(.*?)\n```|(\{.*\})', content, re.DOTALL)
         if json_match:
