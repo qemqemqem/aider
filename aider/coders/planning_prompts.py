@@ -10,7 +10,26 @@ from .editblock_prompts import EditBlockPrompts
 # Bugs should probably go in the 'bugs' folder
 # Design decisions should probably go in the 'decisions' folder
 # Tell the LLM all of this, so that it can create the files in the right place
-# 
+# The LLM is going to be faced with vague requests or documentation from the user, and its job in this mode is to turn it into clearly defined tasks
+# Tasks often need to be split up, so the LLM should sometimes reflect on its own work and see if it can break things down further
+# Each task should fit one of these criteria:
+#  - It's a bug
+#  - It's a design decision that requires deep thought or a verdict from the user
+#  - It's a task that can be completed in a single session. Give advice like "if a junior developer couldn't do this in 2 days, it's too big". If it's too big, split it up
+
+# The issues should be markdown with frontmatter YAML content like this:
+# ---
+# type: bug
+# status: na
+# priority: na
+# tags:
+#   - example
+# affected: example_file.py
+# related: 001_example_feature.md
+# ---
+
+# All created files should have unique and helpful names
+
 
 
 class PlanningPrompts(EditBlockPrompts):
