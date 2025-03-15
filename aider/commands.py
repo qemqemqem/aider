@@ -1575,11 +1575,34 @@ Just show me the edits I need to make.
             self.io.tool_error("Repository map is not available. Unable to analyze issues.")
             return
             
+        # Common directories where issues might be stored
+        issue_dirs = [
+            "issues/", 
+            "bugs/", 
+            "tasks/",
+            "docs/issues/",
+            "documentation/issues/",
+            ".github/issues/",
+            "todo/",
+            "backlog/",
+            "features/",
+            "enhancements/"
+        ]
+        
         # Get all issue files from the repository
         issue_files = []
         if self.coder.repo:
             all_files = self.coder.repo.get_tracked_files()
-            issue_files = [f for f in all_files if f.startswith("issues/") and f.endswith(".md")]
+            
+            # First try to find issues in common directories
+            for issue_dir in issue_dirs:
+                dir_issues = [f for f in all_files if f.startswith(issue_dir) and f.endswith(".md")]
+                issue_files.extend(dir_issues)
+            
+            # If no issues found in common directories, ask the LLM to find them
+            if not issue_files:
+                self.io.tool_output("No issues found in standard directories. Asking LLM to locate issue files...")
+                issue_files = self._find_issue_files_with_llm(all_files)
         
         if not issue_files:
             self.io.tool_error("No issue files found in the repository.")
@@ -1669,6 +1692,64 @@ Be thorough in your analysis but focus on practical factors that would make an i
         reasoning = reasoning_match.group(1).strip() if reasoning_match else ""
         
         return chosen_issue, reasoning
+    
+    def _find_issue_files_with_llm(self, all_files):
+        """Ask the LLM to identify issue files in the repository."""
+        self.io.tool_output("Asking LLM to identify issue files...")
+        
+        # Create a sample of files to send to the LLM (to avoid token limits)
+        sample_files = all_files[:500]  # Limit to 500 files to avoid token limits
+        
+        prompt = f"""
+I need to identify issue files in this repository. These are files that describe bugs, feature requests, 
+tasks, or other work items that need to be addressed.
+
+Issue files typically:
+1. Have a .md extension (Markdown)
+2. Contain structured information about a problem or feature
+3. May include YAML frontmatter with fields like 'status', 'priority', 'type', etc.
+4. May be organized in directories like 'issues/', 'bugs/', 'tasks/', etc.
+5. Often have descriptive filenames related to the issue
+
+Here are the files in the repository:
+{os.linesep.join(sample_files)}
+
+Please identify which files are likely to be issue files. Return your response as a JSON array of filenames.
+For example: ["issues/bug-123.md", "tasks/feature-456.md"]
+
+If you're not sure about a file, include it anyway.
+"""
+        
+        messages = [{"role": "user", "content": prompt}]
+        response = self.coder.main_model.simple_send_with_retries(messages)
+        
+        # Extract JSON array from response
+        if isinstance(response, dict):
+            content = response.get("content", "")
+        else:
+            content = str(response)
+            
+        # Try to extract a JSON array using regex
+        import re
+        import json
+        
+        match = re.search(r'\[.*?\]', content, re.DOTALL)
+        if match:
+            try:
+                issue_files = json.loads(match.group(0))
+                self.io.tool_output(f"Found {len(issue_files)} potential issue files.")
+                return issue_files
+            except json.JSONDecodeError:
+                pass
+        
+        # If JSON parsing fails, try to extract filenames with .md extension
+        md_files = re.findall(r'[\w\-./]+\.md', content)
+        if md_files:
+            self.io.tool_output(f"Extracted {len(md_files)} potential issue files from LLM response.")
+            return md_files
+        
+        # If all else fails, return any markdown files that might be issues
+        return [f for f in all_files if f.endswith('.md') and not f.startswith('aider/website/')]
         
     def cmd_focus(self, args):
         "Focus on a specific file and its related files, dropping others from the chat"
