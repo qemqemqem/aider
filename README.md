@@ -1,6 +1,6 @@
-# Aider - Enhanced Fork
+# Aider Advanced
 
-> **⚠️ BETA WARNING**: This enhanced fork is currently in beta. Features may change, break, or be removed without notice. Use at your own risk in production environments.
+> **⚠️ BETA WARNING**: Aider Advanced is currently in beta. Features may change, break, or be removed without notice. Use at your own risk in production environments.
 
 This project is a fork of [aider.chat](https://aider.chat/), an AI pair programming tool that lets you collaborate with an LLM to edit code in your local Git repository.
 
@@ -18,7 +18,7 @@ This enhanced fork includes all the original aider functionality plus these new 
 
 ## Installation
 
-You can install this enhanced fork directly from GitHub:
+You can install Aider Advanced directly from GitHub:
 
 ```bash
 pip install git+https://github.com/qemqemqem/aider-advanced.git
@@ -30,6 +30,13 @@ Or clone the repository and install locally:
 git clone https://github.com/qemqemqem/aider-advanced.git
 cd aider-advanced
 pip install -e .
+```
+
+After installation, you can run the tool using either:
+
+```bash
+aider-advanced  # New command
+aider           # Backward compatible command
 ```
 
 ### Requirements

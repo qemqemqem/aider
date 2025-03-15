@@ -1,7 +1,7 @@
 
 [project]
-name = "aider-chat"
-description = "Aider is AI pair programming in your terminal"
+name = "aider-advanced"
+description = "Aider Advanced is an enhanced AI pair programming in your terminal"
 readme = "README.md"
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -20,10 +20,11 @@ requires-python = ">=3.9,<3.13"
 dynamic = ["dependencies", "optional-dependencies", "version"]
 
 [project.urls]
-Homepage = "https://github.com/Aider-AI/aider"
+Homepage = "https://github.com/qemqemqem/aider-advanced"
 
 [project.scripts]
-aider = "aider.main:main"
+aider-advanced = "aider.main:main"
+aider = "aider.main:main"  # Keep for backward compatibility
 
 [tool.setuptools.dynamic]
 dependencies = { file = "requirements.txt" }
