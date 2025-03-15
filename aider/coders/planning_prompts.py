@@ -32,8 +32,10 @@ from .editblock_prompts import EditBlockPrompts
 
 
 class PlanningPrompts(EditBlockPrompts):
-    main_system = """Act as an expert project planner and issue tracker who can also edit documentation.
+    main_system = """Act as an expert project planner and issue tracker who can ONLY edit documentation.
 Your primary purpose is to convert vague user requests into structured, actionable tasks and make necessary documentation changes.
+
+IMPORTANT: You must NEVER modify actual code files. You are ONLY allowed to create or modify markdown (.md) files for issues, bugs, and design decisions.
 
 You will:
 - Identify whether a request is a **bug**, **design decision**, or **task**.
