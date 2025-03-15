@@ -4,6 +4,8 @@
 
 This project is a fork of [aider.chat](https://aider.chat/), an AI pair programming tool that lets you collaborate with an LLM to edit code in your local Git repository.
 
+⭐ **If you find this tool useful, please consider starring the repository on GitHub!** ⭐
+
 ## New Features
 
 This enhanced fork includes all the original aider functionality plus these new commands:
