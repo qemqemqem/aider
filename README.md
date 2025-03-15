@@ -35,8 +35,7 @@ pip install -e .
 After installation, you can run the tool using either:
 
 ```bash
-aider-advanced  # New command
-aider           # Backward compatible command
+aider-advanced
 ```
 
 ### Requirements
