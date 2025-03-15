@@ -157,34 +157,41 @@ class Commands:
         return models
         
     def completions_backtrack(self):
-        # Return a list of potential features/approaches to backtrack from
-        # based on recent commit messages
+        # Return a list of common backtracking phrases
         if not self.coder.repo:
             return []
             
         try:
-            commits = list(self.coder.repo.repo.iter_commits(max_count=20))
-            features = set()
+            # Get recent commit messages to suggest potential things to backtrack from
+            commits = list(self.coder.repo.repo.iter_commits(max_count=10))
+            suggestions = []
             
+            # Add generic backtracking phrases
+            suggestions.extend([
+                "before we started using",
+                "before the last feature",
+                "to before the refactoring",
+                "to a working state"
+            ])
+            
+            # Add suggestions based on recent commit messages
             for commit in commits:
-                # Extract potential feature names from commit messages
-                message = commit.message.strip().lower()
-                
-                # Look for common patterns in commit messages
-                patterns = [
-                    r'add(?:ed|ing)?\s+(\w+)',
-                    r'implement(?:ed|ing)?\s+(\w+)',
-                    r'feat(?:ure)?:\s*(\w+)',
-                    r'refactor(?:ed|ing)?\s+(\w+)',
-                ]
-                
-                for pattern in patterns:
-                    matches = re.findall(pattern, message)
-                    features.update(matches)
+                message = commit.message.strip()
+                if len(message) > 10:  # Only use meaningful commit messages
+                    # Clean up the message to make it a good suggestion
+                    clean_message = message.split('\n')[0]  # First line only
+                    if len(clean_message) > 30:
+                        clean_message = clean_message[:30] + "..."
+                    suggestions.append(f"before {clean_message}")
             
-            return sorted(list(features))
+            return suggestions
         except ANY_GIT_ERROR:
-            return []
+            return [
+                "before we started using",
+                "before the last feature",
+                "to before the refactoring",
+                "to a working state"
+            ]
 
     def cmd_models(self, args):
         "Search the list of available models"
@@ -1788,16 +1795,18 @@ If you're not sure about a file, include it anyway.
             self.io.tool_error("No git repository found.")
             return
             
-        # Parse the user's request to identify what feature/approach to revert
-        feature_name = args.strip()
-        if not feature_name:
-            self.io.tool_error("Please specify what feature or approach you want to backtrack from.")
-            self.io.tool_output("Example: /backtrack foobar")
+        # Get the user's query about what to backtrack from
+        query = args.strip()
+        if not query:
+            self.io.tool_error("Please describe what you want to backtrack from.")
+            self.io.tool_output("Example: /backtrack the login system changes")
+            self.io.tool_output("Example: /backtrack before we started using React")
             return
             
-        # Get commit history
+        # Get full commit history
         try:
-            commits = list(self.coder.repo.repo.iter_commits())
+            # Get all commits, but limit to a reasonable number to avoid token limits
+            commits = list(self.coder.repo.repo.iter_commits(max_count=50))
         except ANY_GIT_ERROR as err:
             self.io.tool_error(f"Unable to retrieve git history: {err}")
             return
@@ -1806,12 +1815,12 @@ If you're not sure about a file, include it anyway.
             self.io.tool_error("No commits found in the repository.")
             return
             
-        # Find commits related to the specified feature/approach
-        self.io.tool_output(f"Searching for commits related to '{feature_name}'...")
+        # Inform the user we're analyzing the history
+        self.io.tool_output(f"Analyzing git history to find where to backtrack based on: '{query}'...")
         
         # Create a prompt for the LLM to analyze commit history
         commit_info = []
-        for commit in commits[:20]:  # Limit to recent 20 commits to avoid token limits
+        for commit in commits:
             commit_info.append({
                 "hash": commit.hexsha,
                 "short_hash": commit.hexsha[:7],
@@ -1821,8 +1830,7 @@ If you're not sure about a file, include it anyway.
             })
             
         prompt = f"""
-Analyze these git commits and identify the commit where we started working on the feature/approach '{feature_name}'.
-We want to backtrack to the commit right before we started working on this feature.
+Based on the user's request to backtrack: "{query}", analyze these git commits and identify the best commit to revert to.
 
 Commits (from newest to oldest):
 """
@@ -1834,20 +1842,22 @@ Commits (from newest to oldest):
                 prompt += f" and {len(info['files_changed']) - 5} more"
             prompt += "\n"
             
-        prompt += """
+        prompt += f"""
+Based on the user's request: "{query}", determine which commit we should revert to.
+
 Respond with a JSON object containing:
-1. "target_commit": The hash of the commit we should revert to (the one right BEFORE we started working on the feature)
-2. "feature_commits": Array of hashes of all commits related to this feature
+1. "target_commit": The hash of the commit we should revert to
+2. "related_commits": Array of hashes of commits related to what the user wants to backtrack from
 3. "explanation": Brief explanation of your reasoning
 4. "summary": A summary of what was attempted and why it didn't work
 
 Example response:
-{
+{{
   "target_commit": "abc1234",
-  "feature_commits": ["def5678", "ghi9012"],
-  "explanation": "We should revert to abc1234 because it's the commit right before we started implementing the feature.",
-  "summary": "The attempt to implement feature X encountered problems with Y and Z."
-}
+  "related_commits": ["def5678", "ghi9012"],
+  "explanation": "We should revert to abc1234 because it's the commit right before the changes related to the user's query.",
+  "summary": "The attempt to implement X encountered problems with Y and Z."
+}}
 """
         
         # Get the LLM's analysis
@@ -1970,30 +1980,25 @@ The following conversation led to this backtracking:
             
         # Perform the git revert
         try:
-            # Create a new branch for the revert
-            branch_name = f"backtrack_{sanitized_feature_name}_{timestamp}"
-            self.coder.repo.repo.git.checkout("-b", branch_name)
-            
             # Reset to the target commit
             self.coder.repo.repo.git.reset("--hard", target_commit)
             
             self.io.tool_output(f"Successfully backtracked to commit {commit_obj.hexsha[:7]}.")
-            self.io.tool_output(f"Created new branch: {branch_name}")
             self.io.tool_output(f"Saved failed attempt documentation to: {report_path}")
             
             # Add a message to the chat history about the backtracking
-            backtrack_msg = f"""I've backtracked to commit {commit_obj.hexsha[:7]} because the approach with '{feature_name}' wasn't working.
+            backtrack_msg = f"""I've backtracked to commit {commit_obj.hexsha[:7]} based on your request.
 
 A record of this failed attempt has been saved to: {report_path}
 
 Summary of what didn't work:
 {summary}
 
-We're now on a new branch '{branch_name}' and can try a different approach.
+We can now try a different approach.
 """
             
             self.coder.cur_messages += [
-                dict(role="user", content=f"This approach with {feature_name} isn't working. Let's go back and try something else."),
+                dict(role="user", content=f"This isn't working: {query}. Let's go back and try something else."),
                 dict(role="assistant", content=backtrack_msg),
             ]
             
