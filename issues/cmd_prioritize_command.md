@@ -7,6 +7,8 @@ tags:
   - commands
   - productivity
 affected: aider/commands.py
+subtasks:
+  - issues/prioritize_prompt_design.md
 ---
 
 # Add cmd_prioritize Command
@@ -22,3 +24,11 @@ Create a new `/prioritize` command that will ask the LLM to analyze all open iss
 - [ ] Automatically execute the `/focus` command on the chosen issue
 - [ ] Add command to the help documentation
 - [ ] Write tests for the new command
+
+## Open Questions
+1. How should we handle issues without explicit priority in their YAML frontmatter?
+2. Should we consider dependencies between issues (via the `related` field) when prioritizing?
+3. What criteria should the LLM use to determine importance (urgency, impact, complexity)?
+4. Should we allow the user to specify additional prioritization criteria as arguments?
+5. How should we handle the case where there are no open issues?
+6. Should we provide a preview of the LLM's reasoning before automatically focusing on the chosen issue?
