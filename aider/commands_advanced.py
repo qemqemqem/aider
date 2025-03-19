@@ -1,10 +1,17 @@
+from .dump import dump  # noqa: F401
 import json
 import os
 import re
-from datetime import datetime
 
 from aider.advisors import AdvisorManager
-from aider.commands import parse_quoted_filenames
+
+
+# TODO This should be moved to a common utility module
+def parse_quoted_filenames(args):
+    filenames = re.findall(r"\"(.+?)\"|(\S+)", args)
+    filenames = [name for sublist in filenames for name in sublist if name]
+    return filenames
+
 
 class AdvancedCommandsMixin:
     """Mixin class providing advanced commands."""
@@ -74,8 +81,6 @@ class AdvancedCommandsMixin:
         if not self.coder.repo_map:
             self.io.tool_error("Repository map is not available. Unable to analyze issues.")
             return
-
-        aosnehuaoseuhoasneuhtoa usaonehusaoehusnoaehu aoseunhaosneuhao eusnth
 
         # Common directories where issues might be stored
         issue_dirs = [
