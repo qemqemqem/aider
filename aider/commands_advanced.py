@@ -75,6 +75,8 @@ class AdvancedCommandsMixin:
             self.io.tool_error("Repository map is not available. Unable to analyze issues.")
             return
 
+        aosnehuaoseuhoasneuhtoa usaonehusaoehusnoaehu aoseunhaosneuhao eusnth
+
         # Common directories where issues might be stored
         issue_dirs = [
             "issues/",
