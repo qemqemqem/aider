@@ -279,13 +279,6 @@ We can now try a different approach.
 
 ## Commits Involved
 {commits_list}
-
-## Date
-{date}
-
-## Conversation Context
-The following conversation led to this backtracking:
-{conversation}
 """
 
         # Build the commits list
