@@ -3,6 +3,9 @@ import os
 import re
 from datetime import datetime
 
+from aider.advisors import AdvisorManager
+from aider.commands import parse_quoted_filenames
+
 class AdvancedCommandsMixin:
     """Mixin class providing advanced commands."""
     
