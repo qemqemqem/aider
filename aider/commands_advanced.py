@@ -11,6 +11,10 @@ class AdvancedCommandsMixin:
         files = [self.quote_fname(fn) for fn in files]
         return files
 
+    def cmd_plan(self, args):
+        """Enter plan/editor mode using 2 different models. If no prompt provided, switches to plan/editor mode."""  # noqa
+        return self._generic_chat_command(args, "plan")
+
     def cmd_advise(self, args):
         """Creates an advisor persona based on the question, and gives advice based on that persona. If no persona is found, it creates one."""
         # TODO:
@@ -290,6 +294,80 @@ We can now try a different approach.
         except ANY_GIT_ERROR as err:
             self.io.tool_error(f"Failed to backtrack: {err}")
             self.io.tool_output("The failed attempt documentation was still saved to: {report_path}")
+
+    def cmd_prioritize(self, args):
+        "Analyze all open issues and determine which one is most important to tackle next"
+
+        # Get the repomap with include_text_and_md=True to ensure all issue files are visible
+        if not self.coder.repo_map:
+            self.io.tool_error("Repository map is not available. Unable to analyze issues.")
+            return
+
+        # Common directories where issues might be stored
+        issue_dirs = [
+            "issues/",
+            "bugs/",
+            "tasks/",
+            "docs/issues/",
+            "documentation/issues/",
+            ".github/issues/",
+            "todo/",
+            "backlog/",
+            "features/",
+            "enhancements/"
+        ]
+
+        # Get all issue files from the repository
+        issue_files = []
+        if self.coder.repo:
+            all_files = self.coder.repo.get_tracked_files()
+
+            # First try to find issues in common directories
+            for issue_dir in issue_dirs:
+                dir_issues = [f for f in all_files if f.startswith(issue_dir) and f.endswith(".md")]
+                issue_files.extend(dir_issues)
+
+            # If no issues found in common directories, ask the LLM to find them
+            if not issue_files:
+                self.io.tool_output("No issues found in standard directories. Asking LLM to locate issue files...")
+                issue_files = self._find_issue_files_with_llm(all_files)
+
+        if not issue_files:
+            self.io.tool_error("No issue files found in the repository.")
+            return
+
+        self.io.tool_output(f"Analyzing {len(issue_files)} issues to determine priority...")
+
+        # Read the content of each issue file
+        issues_data = []
+        for issue_file in issue_files:
+            abs_path = self.coder.abs_root_path(issue_file)
+            content = self.io.read_text(abs_path)
+            if content:
+                issues_data.append({"file": issue_file, "content": content})
+
+        # Create a prompt for the LLM to evaluate and prioritize issues
+        prompt = self._create_prioritize_prompt(issues_data)
+
+        # Get the LLM's response
+        messages = [{"role": "user", "content": prompt}]
+        response = self.coder.main_model.simple_send_with_retries(messages)
+
+        # Parse the response to identify the chosen issue
+        chosen_issue, reasoning = self._parse_prioritize_response(response)
+
+        if not chosen_issue:
+            self.io.tool_error("Failed to identify a priority issue from the LLM's response.")
+            return
+
+        # Display the chosen issue and reasoning
+        self.io.tool_output(f"\nPriority issue: {chosen_issue}")
+        self.io.tool_output(f"\nReasoning:\n{reasoning}")
+
+        # Ask the user to confirm focusing on this issue
+        if self.io.confirm_ask(f"Would you like to focus on {chosen_issue}?", default="y"):
+            # Execute the focus command on the chosen issue
+            self.cmd_focus(chosen_issue)
 
     def cmd_focus(self, args):
         "Focus on a specific file and its related files, dropping others from the chat"
