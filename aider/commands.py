@@ -1971,7 +1971,18 @@ The following conversation led to this backtracking:
         # Ask for confirmation with clear warning about git reset --hard
         self.io.tool_output(f"Found target commit: {commit_obj.hexsha[:7]} - {commit_obj.message.strip()}")
         self.io.tool_output("\nThe following commits will be lost:")
-        # TODO List the commits that will be lost
+        
+        # List the commits that will be lost (commits between HEAD and target_commit)
+        try:
+            lost_commits = list(self.coder.repo.repo.iter_commits(f"{target_commit}..HEAD"))
+            if lost_commits:
+                for commit in lost_commits:
+                    self.io.tool_output(f"  • {commit.hexsha[:7]} - {commit.message.strip().split('\n')[0]}")
+            else:
+                self.io.tool_output("  (No commits will be lost)")
+        except ANY_GIT_ERROR as err:
+            self.io.tool_output("  (Unable to list commits that will be lost)")
+            
         self.io.tool_output(f"\nSummary of failed attempt: \n{summary}")
         self.io.tool_output("\nWARNING: This will use 'git reset --hard' which will:")
         self.io.tool_output("  1. Discard ALL uncommitted changes")
